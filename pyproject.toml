@@ -1,0 +1,21 @@
+[project]
+name = "hjudge"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Đặng Xuân Minh Hiếu", email = "zipdang2004@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "alembic>=1.18.4",
+    "litestar[standard]>=2.21.0",
+    "pytest>=9.0.2",
+]
+
+[project.scripts]
+hjudge = "hjudge:main"
+
+[build-system]
+requires = ["uv_build>=0.9.27,<0.10.0"]
+build-backend = "uv_build"
