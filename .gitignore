@@ -11,3 +11,6 @@ wheels/
 
 # Credentials
 postgres.env
+
+# test db
+.db
