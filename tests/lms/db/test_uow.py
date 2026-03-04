@@ -10,9 +10,6 @@ from hjudge.lms.db.uow import SQLAlchemyUnitOfWork
 from hjudge.lms.models.user import User
 from tests.conftest import DEFAULT_ENGINE
 
-USER_REPOSITORY = "UserRepository"
-repository_directory = {USER_REPOSITORY: SQLAlchemyUserRepository}
-
 
 @pytest.fixture
 def engine() -> Engine:
@@ -23,10 +20,8 @@ def engine() -> Engine:
 def uow(engine) -> SQLAlchemyUnitOfWork:
     uow = SQLAlchemyUnitOfWork(engine)
     with uow:
-        uow.current_session.execute(user_table.delete()) 
-        uow.current_session.execute(
-            user_session_table.delete()
-        )
+        uow.current_session.execute(user_table.delete())
+        uow.current_session.execute(user_session_table.delete())
         uow.commit()
     return uow
 
