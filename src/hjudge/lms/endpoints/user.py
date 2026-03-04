@@ -1,4 +1,4 @@
-from litestar import Response, get, post
+from litestar import Request, post
 
 from hjudge.lms.db.uow import AbstractUnitOfWork
 from hjudge.lms.endpoints import OK_RESPONSE
