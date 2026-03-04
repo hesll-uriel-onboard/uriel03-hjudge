@@ -14,6 +14,7 @@ class UserWrongPasswordError(Exception):
 class CookieExistedError(Exception):
     """Cookie existed"""
 
+
 ############## UOW ##############
 class UOWSessionNotFoundError(Exception):
     """`current_session` is None"""

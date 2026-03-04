@@ -6,7 +6,8 @@ from hjudge.lms.db.repositories.user import (
     SQLAlchemyUserRepository,
 )
 from hjudge.lms.db.tables.user import user_session_table, user_table
-from hjudge.lms.db.uow import SQLAlchemyUnitOfWork
+from hjudge.lms.db.uow import AbstractUnitOfWork, SQLAlchemyUnitOfWork
+from hjudge.lms.errors import UOWSessionNotFoundError
 from hjudge.lms.models.user import User
 from tests.conftest import DEFAULT_ENGINE
 
@@ -26,10 +27,8 @@ def uow(engine) -> SQLAlchemyUnitOfWork:
     return uow
 
 
-def test_add_a_user(uow: SQLAlchemyUnitOfWork):
+def test_add_a_user(uow: AbstractUnitOfWork):
     with uow:
-        uow.current_session.execute(user_table.delete())
-
         user_repo: SQLAlchemyUserRepository = uow.create_repository(
             AbstractUserRepository
         )  # pyright: ignore
@@ -43,10 +42,8 @@ def test_add_a_user(uow: SQLAlchemyUnitOfWork):
     assert result == user
 
 
-def test_add_a_user_session(uow: SQLAlchemyUnitOfWork):
+def test_add_a_user_session(uow: AbstractUnitOfWork):
     with uow:
-        uow.current_session.execute(user_table.delete())
-
         user_repo: SQLAlchemyUserRepository = uow.create_repository(
             AbstractUserRepository
         )  # pyright: ignore
@@ -58,3 +55,8 @@ def test_add_a_user_session(uow: SQLAlchemyUnitOfWork):
     result = user_repo.get_user(user.username)
     assert result is not None
     assert result == user
+
+
+def test_access_to_current_session_without_entering(uow: SQLAlchemyUnitOfWork):
+    with pytest.raises(UOWSessionNotFoundError):
+        uow.current_session
