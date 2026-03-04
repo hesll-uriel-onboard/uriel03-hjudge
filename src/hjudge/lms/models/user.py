@@ -1,7 +1,6 @@
 import secrets
 import string
 import uuid
-from dataclasses import dataclass
 from datetime import datetime
 from uuid import UUID
 
@@ -10,21 +9,10 @@ from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
     MappedAsDataclass,
-    declared_attr,
     mapped_column,
 )
 
-from hjudge.lms.db.tables import mapper_registry
 
-# @mapper_registry.as_declarative_base()
-# class Base(BaseModel):
-#     @declared_attr
-#     def __tablename__(cls):
-#         return cls.__name__.lower()  # pyright: ignore
-
-
-#     id: UUID4 = Column(Integer, primary_key=True)
-# @mapper_registry.as_declarative_base()
 class Base(DeclarativeBase, MappedAsDataclass, kw_only=True):
     id: Mapped[UUID] = mapped_column(
         primary_key=True, default_factory=lambda: uuid.uuid4()
