@@ -14,7 +14,6 @@ from sqlalchemy import create_engine
 CURRENT_DIRECTORY = pathlib.Path(__file__).parent
 NAME = ".db"
 DATABASE_FILENAME = f"{CURRENT_DIRECTORY}/{NAME}"
-print(DATABASE_FILENAME)
 
 # remove database
 if os.path.exists(DATABASE_FILENAME):

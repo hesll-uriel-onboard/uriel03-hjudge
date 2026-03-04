@@ -44,7 +44,6 @@ class SQLAlchemyUnitOfWork(AbstractUnitOfWork):
         self._current_session = None
 
     def __enter__(self):
-        print("entered")
         self._current_session = create_session(self.engine)
         assert self._current_session is not None
         return super().__enter__()

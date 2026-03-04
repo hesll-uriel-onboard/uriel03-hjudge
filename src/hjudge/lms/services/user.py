@@ -36,10 +36,6 @@ def login(username: str, password: str, uow: AbstractUnitOfWork) -> UserSession:
         user = user_repo.get_user(username)
         if user is None:
             raise UserNotFoundError
-        print("====================")
-        print(user.username, username)
-        print(user.password, password)
-        print("====================")
         if user.password != password:
             raise UserWrongPasswordError
 

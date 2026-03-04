@@ -41,7 +41,6 @@ def uow(engine) -> SQLAlchemyUnitOfWork:
             user_session_table.delete()
         )
         uow.commit()
-    print("initiate!!!!!")
     return uow
 
 
@@ -72,7 +71,6 @@ def test_login(uow: AbstractUnitOfWork):
     # with
     user = make_a_user()
     user = register(user.username, user.password, user.name, uow)
-    print(user.id)
     # do
     result = login(user.username, user.password, uow)
     # assert

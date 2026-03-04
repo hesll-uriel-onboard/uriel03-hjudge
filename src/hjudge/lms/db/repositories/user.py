@@ -1,15 +1,6 @@
-import secrets
-import string
-from datetime import datetime
-from typing import Protocol, override
-from uuid import uuid4
-
-from pydantic import UUID4
-from sqlalchemy import Result, Row, insert
 from sqlalchemy.orm import Session
 
 from hjudge.lms.db.repositories import AbstractRepository
-from hjudge.lms.db.tables.user import user_session_table, user_table
 from hjudge.lms.models.user import User, UserSession
 
 
