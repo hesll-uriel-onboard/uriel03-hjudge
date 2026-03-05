@@ -3,12 +3,13 @@ import sqlalchemy as sa
 
 from hjudge.lms.db.tables.user import user_session_table, user_table
 from hjudge.lms.db.uow import AbstractUnitOfWork
+from hjudge.lms.endpoints.requests.user import UserRegisterRequest
 from hjudge.lms.errors import (
     UserExistedError,
     UserNotFoundError,
     UserWrongPasswordError,
 )
-from hjudge.lms.models.user import User
+from hjudge.lms.models.user import User, hashed_password
 from hjudge.lms.services.user import login, register
 from tests.conftest import engine
 
@@ -17,10 +18,10 @@ PASSWORD = "test"
 NAME = "test"
 
 
-def make_a_user(
+def make_a_user_request(
     username: str = USERNAME, password: str = PASSWORD, name: str = NAME
-) -> User:
-    return User(
+) -> UserRegisterRequest:
+    return UserRegisterRequest(
         username=username,
         password=password,
         name=name,
@@ -40,19 +41,19 @@ def clear_tables(engine: sa.Engine):
 def test_register(uow: AbstractUnitOfWork):
     """Make a random user, register, and check the returned user"""
     # with
-    user = make_a_user()
+    user = make_a_user_request()
     # do
     result = register(user.username, user.password, user.name, uow)
     # assert
     assert result.id is not None
     assert result.username == user.username
-    assert result.password == user.password
+    assert result.password == hashed_password(user.password)
     assert result.name == user.name
 
 
 def test_register_duplicated(uow: AbstractUnitOfWork):
     # with
-    user = make_a_user()
+    user = make_a_user_request()
     # do
     register(user.username, user.password, user.name, uow)
     # do and assert
@@ -62,19 +63,25 @@ def test_register_duplicated(uow: AbstractUnitOfWork):
 
 def test_login(uow: AbstractUnitOfWork):
     # with
-    user = make_a_user()
-    user = register(user.username, user.password, user.name, uow)
+    request = make_a_user_request()
+    register(
+        request.username,
+        request.password,
+        request.name,
+        uow,
+    )
     # do
-    result = login(user.username, user.password, uow)
+    result = login(request.username, request.password, uow)
+    print(request.password, result.user.password)
     # assert
-    assert result.user == user
+    assert result.user.username == request.username
     assert result.cookie is not None
     assert result.active
 
 
 def test_login_wrong_password(uow: AbstractUnitOfWork):
     # with
-    user = make_a_user()
+    user = make_a_user_request()
     user = register(user.username, user.password, user.name, uow)
     # and
     WRONG_PASSWORD = "wrong_password"
@@ -85,7 +92,7 @@ def test_login_wrong_password(uow: AbstractUnitOfWork):
 
 def test_login_unknown_user(uow: AbstractUnitOfWork):
     # with
-    user = make_a_user()
+    user = make_a_user_request()
     user = register(user.username, user.password, user.name, uow)
 
     # do

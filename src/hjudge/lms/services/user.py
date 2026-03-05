@@ -5,12 +5,13 @@ from hjudge.lms.errors import (
     UserNotFoundError,
     UserWrongPasswordError,
 )
-from hjudge.lms.models.user import User, UserSession
+from hjudge.lms.models.user import User, UserSession, hashed_password
 
 
 def register(
     username: str, password: str, name: str, uow: AbstractUnitOfWork
 ) -> User:
+    password = hashed_password(password)
     with uow:
         user_repo: AbstractUserRepository = uow.create_repository(
             AbstractUserRepository
@@ -28,6 +29,7 @@ def register(
 
 def login(username: str, password: str, uow: AbstractUnitOfWork) -> UserSession:
     # TODO after MVP: disable usersession after a month
+    password = hashed_password(password)
     with uow:
         user_repo: AbstractUserRepository = uow.create_repository(
             AbstractUserRepository
@@ -36,6 +38,7 @@ def login(username: str, password: str, uow: AbstractUnitOfWork) -> UserSession:
         user = user_repo.get_user(username)
         if user is None:
             raise UserNotFoundError
+        print("======", user.password, password)
         if user.password != password:
             raise UserWrongPasswordError
 

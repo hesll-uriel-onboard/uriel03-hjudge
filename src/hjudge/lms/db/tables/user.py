@@ -1,3 +1,6 @@
+from hashlib import sha256
+from typing import Optional, override
+
 import sqlalchemy as sa
 
 from hjudge.lms.db.tables import mapper_registry
