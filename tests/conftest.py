@@ -3,11 +3,14 @@
 import os
 import pathlib
 
+import pytest
 from alembic.command import EnvironmentContext
 from alembic.config import Config
 from alembic.runtime.migration import RevisionStep
 from alembic.script import ScriptDirectory
-from sqlalchemy import create_engine
+from sqlalchemy import Engine, create_engine
+
+from hjudge.lms.db.uow import SQLAlchemyUnitOfWork
 
 # from migrations.env import run_migrations
 
@@ -49,3 +52,13 @@ def run_migrations() -> None:
 
 
 run_migrations()
+
+
+@pytest.fixture(scope="session")
+def engine() -> Engine:
+    return DEFAULT_ENGINE
+
+
+@pytest.fixture(scope="module")
+def uow(engine) -> SQLAlchemyUnitOfWork:
+    return SQLAlchemyUnitOfWork(engine)

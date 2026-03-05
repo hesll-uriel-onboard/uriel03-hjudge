@@ -9,22 +9,21 @@ from hjudge.lms.db.tables.user import user_session_table, user_table
 from hjudge.lms.db.uow import AbstractUnitOfWork, SQLAlchemyUnitOfWork
 from hjudge.lms.errors import UOWSessionNotFoundError
 from hjudge.lms.models.user import User
-from tests.conftest import DEFAULT_ENGINE
+from tests.conftest import engine
 
 
-@pytest.fixture
-def engine() -> Engine:
-    return DEFAULT_ENGINE
+@pytest.fixture(autouse=True)
+def clear_tables(engine: Engine):
+    with engine.connect() as connection:
+        connection.execute(user_table.delete())
+        connection.execute(user_session_table.delete())
+        connection.commit()
 
 
-@pytest.fixture
-def uow(engine) -> SQLAlchemyUnitOfWork:
-    uow = SQLAlchemyUnitOfWork(engine)
-    with uow:
-        uow.current_session.execute(user_table.delete())
-        uow.current_session.execute(user_session_table.delete())
-        uow.commit()
-    return uow
+# def uow(engine) -> SQLAlchemyUnitOfWork:
+#     uow = SQLAlchemyUnitOfWork(engine)
+#     with uow:
+#     return uow
 
 
 def test_add_a_user(uow: AbstractUnitOfWork):

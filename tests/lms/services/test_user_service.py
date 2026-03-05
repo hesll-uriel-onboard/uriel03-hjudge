@@ -1,8 +1,8 @@
-from hjudge.lms.db.tables.user import user_session_table, user_table
 import pytest
 import sqlalchemy as sa
 
-from hjudge.lms.db.uow import AbstractUnitOfWork, SQLAlchemyUnitOfWork
+from hjudge.lms.db.tables.user import user_session_table, user_table
+from hjudge.lms.db.uow import AbstractUnitOfWork
 from hjudge.lms.errors import (
     UserExistedError,
     UserNotFoundError,
@@ -10,7 +10,7 @@ from hjudge.lms.errors import (
 )
 from hjudge.lms.models.user import User
 from hjudge.lms.services.user import login, register
-from tests.conftest import DEFAULT_ENGINE
+from tests.conftest import engine
 
 USERNAME = "test"
 PASSWORD = "test"
@@ -27,21 +27,14 @@ def make_a_user(
     )
 
 
-@pytest.fixture()
-def engine() -> sa.Engine:
-    return DEFAULT_ENGINE
-
-
-@pytest.fixture
-def uow(engine) -> SQLAlchemyUnitOfWork:
-    uow = SQLAlchemyUnitOfWork(engine)
-    with uow:
-        uow.current_session.execute(user_table.delete())
-        uow.current_session.execute(
-            user_session_table.delete()
-        )
-        uow.commit()
-    return uow
+@pytest.fixture(autouse=True, scope="function")
+def clear_tables(engine: sa.Engine):
+    print("=======in=======")
+    with engine.connect() as connection:
+        connection.execute(user_table.delete())
+        connection.execute(user_session_table.delete())
+        connection.commit()
+    print("=======out=======")
 
 
 def test_register(uow: AbstractUnitOfWork):

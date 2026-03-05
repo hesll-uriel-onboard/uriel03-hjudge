@@ -1,14 +1,14 @@
 from dataclasses import dataclass
 
+from pydantic import BaseModel
 
-@dataclass
-class UserRegisterRequest:
+
+class UserRegisterRequest(BaseModel):
     username: str
     password: str
     name: str
 
 
-@dataclass
-class UserLoginRequest:
+class UserLoginRequest(BaseModel):
     username: str
     password: str
