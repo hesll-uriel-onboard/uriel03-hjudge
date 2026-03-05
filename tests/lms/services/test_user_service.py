@@ -1,15 +1,15 @@
 import pytest
 import sqlalchemy as sa
 
-from hjudge.lms.db.tables.user import user_session_table, user_table
-from hjudge.lms.db.uow import AbstractUnitOfWork
-from hjudge.lms.endpoints.requests.user import UserRegisterRequest
-from hjudge.lms.errors import (
+from hjudge.commons.db.uow import AbstractUnitOfWork
+from hjudge.commons.errors import (
     UserExistedError,
     UserNotFoundError,
     UserWrongPasswordError,
 )
-from hjudge.lms.models.user import User, hashed_password
+from hjudge.lms.db.tables.user import user_session_table, user_table
+from hjudge.lms.endpoints.requests.user import UserRegisterRequest
+from hjudge.lms.models.user import hashed_password
 from hjudge.lms.services.user import login, register
 from tests.conftest import engine
 

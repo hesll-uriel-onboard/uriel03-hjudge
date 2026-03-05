@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from hjudge.lms.db.repositories import AbstractRepository
+from hjudge.commons.db import AbstractRepository, SQLAlchemyAbstractRepository
 from hjudge.lms.models.user import User, UserSession
 
 
@@ -24,12 +24,12 @@ class AbstractUserRepository(AbstractRepository):
         raise NotImplementedError
 
 
-class SQLAlchemyUserRepository(AbstractUserRepository):
-    session: Session
+class SQLAlchemyUserRepository(
+    SQLAlchemyAbstractRepository, AbstractUserRepository
+):
 
-    def __init__(self, session) -> None:
-        super().__init__()
-        self.session = session
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
 
     def get_user(self, username: str) -> User | None:
         return (

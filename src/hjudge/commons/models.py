@@ -13,4 +13,3 @@ class Base(DeclarativeBase, MappedAsDataclass, kw_only=True):
     id: Mapped[UUID] = mapped_column(
         primary_key=True, default_factory=lambda: uuid.uuid4()
     )
-    pass

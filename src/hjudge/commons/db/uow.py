@@ -4,12 +4,12 @@ from typing import override
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session, create_session
 
-from hjudge.lms.db.repositories import AbstractRepository
+from hjudge.commons.db import AbstractRepository, SQLAlchemyAbstractRepository
+from hjudge.commons.errors import UOWSessionNotFoundError
 from hjudge.lms.db.repositories.user import (
     AbstractUserRepository,
     SQLAlchemyUserRepository,
 )
-from hjudge.lms.errors import UOWSessionNotFoundError
 
 
 class AbstractUnitOfWork(abc.ABC):
@@ -33,15 +33,28 @@ class AbstractUnitOfWork(abc.ABC):
         raise NotImplementedError
 
 
+SQLAlchemyRepositoryDict = dict[
+    type[AbstractRepository], type[SQLAlchemyAbstractRepository]
+]
+DEFAULT_SQLALCHEMY_REPOSITORY_DICT: SQLAlchemyRepositoryDict = {
+    AbstractUserRepository: SQLAlchemyUserRepository
+}
+
+
 class SQLAlchemyUnitOfWork(AbstractUnitOfWork):
 
     engine: Engine
     _current_session: Session | None
-    repositories_dict = {AbstractUserRepository: SQLAlchemyUserRepository}
+    repositories_dict: SQLAlchemyRepositoryDict
 
-    def __init__(self, engine: Engine):
+    def __init__(
+        self,
+        engine: Engine,
+        repositories_dict: SQLAlchemyRepositoryDict = DEFAULT_SQLALCHEMY_REPOSITORY_DICT,
+    ):
         self.engine = engine
         self._current_session = None
+        self.repositories_dict = repositories_dict
 
     def __enter__(self):
         self._current_session = create_session(self.engine)
@@ -58,9 +71,11 @@ class SQLAlchemyUnitOfWork(AbstractUnitOfWork):
             raise UOWSessionNotFoundError
         return self._current_session
 
-    def create_repository(self, constructor) -> AbstractRepository:
+    def create_repository(
+        self, constructor: type[AbstractRepository]
+    ) -> SQLAlchemyAbstractRepository:
         constructor = self.repositories_dict[constructor]
-        return constructor(self.current_session)
+        return constructor(session=self.current_session)
 
     @override
     def commit(self) -> None:

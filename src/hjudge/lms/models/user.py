@@ -7,7 +7,7 @@ from hashlib import sha256
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
-from hjudge.lms.models import Base
+from hjudge.commons.models import Base
 
 
 class User(Base):

@@ -1,10 +1,10 @@
-from hjudge.lms.db.repositories.user import AbstractUserRepository
-from hjudge.lms.db.uow import AbstractUnitOfWork
-from hjudge.lms.errors import (
+from hjudge.commons.db.uow import AbstractUnitOfWork
+from hjudge.commons.errors import (
     UserExistedError,
     UserNotFoundError,
     UserWrongPasswordError,
 )
+from hjudge.lms.db.repositories.user import AbstractUserRepository
 from hjudge.lms.models.user import User, UserSession, hashed_password
 
 

@@ -5,8 +5,8 @@ from litestar.testing import TestClient
 from sqlalchemy import Engine
 
 from hjudge.app import provide_app
+from hjudge.commons.db.uow import AbstractUnitOfWork
 from hjudge.lms.db.tables.user import user_session_table, user_table
-from hjudge.lms.db.uow import AbstractUnitOfWork
 from hjudge.lms.endpoints.requests.user import (
     UserLoginRequest,
     UserRegisterRequest,

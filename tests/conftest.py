@@ -10,7 +10,7 @@ from alembic.runtime.migration import RevisionStep
 from alembic.script import ScriptDirectory
 from sqlalchemy import Engine, create_engine
 
-from hjudge.lms.db.uow import SQLAlchemyUnitOfWork
+from hjudge.commons.db.uow import SQLAlchemyUnitOfWork
 
 # from migrations.env import run_migrations
 

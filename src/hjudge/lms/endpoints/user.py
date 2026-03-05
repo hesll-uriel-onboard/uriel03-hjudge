@@ -2,7 +2,7 @@ from litestar import Response, post
 from litestar.datastructures import Cookie
 from litestar.status_codes import HTTP_200_OK, HTTP_201_CREATED
 
-from hjudge.lms.db.uow import AbstractUnitOfWork
+from hjudge.commons.db.uow import AbstractUnitOfWork
 from hjudge.lms.endpoints import COOKIE_NAME
 from hjudge.lms.endpoints.requests.user import (
     UserLoginRequest,
