@@ -2,16 +2,23 @@
 
 import os
 import pathlib
+from typing import Generator
 
 import pytest
 from alembic.config import Config
 from alembic.runtime.environment import EnvironmentContext
 from alembic.runtime.migration import RevisionStep
 from alembic.script import ScriptDirectory
+from litestar import Litestar
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import sessionmaker
 
-from hjudge.commons.db.uow import SessionFactoryCallable, SQLAlchemyUnitOfWork
+from hjudge.app import provide_app
+from hjudge.commons.db.uow import (
+    AbstractUnitOfWork,
+    SessionFactoryCallable,
+    SQLAlchemyUnitOfWork,
+)
 
 # from migrations.env import run_migrations
 
@@ -57,14 +64,17 @@ run_migrations()
 
 @pytest.fixture(scope="session")
 def engine() -> Engine:
-    return DEFAULT_ENGINE
+    return create_engine(SQLITE_CONNECTION_STRING)
 
 
 @pytest.fixture(scope="session")
-def session_factory() -> SessionFactoryCallable:
-    return sessionmaker(bind=create_engine(SQLITE_CONNECTION_STRING))
+def uow(engine: Engine) -> Generator[AbstractUnitOfWork, None, None]:
+    yield SQLAlchemyUnitOfWork(sessionmaker(bind=engine))
+    engine.dispose()
 
 
-@pytest.fixture(scope="module")
-def uow(session_factory) -> SQLAlchemyUnitOfWork:
-    return SQLAlchemyUnitOfWork(session_factory)
+@pytest.fixture(scope="session")
+def app(uow: AbstractUnitOfWork) -> Litestar:
+    app = provide_app(uow)
+    app.debug = True
+    return app

@@ -12,7 +12,6 @@ from hjudge.lms.models.converters import (
     as_user_session_entity,
 )
 from hjudge.lms.models.user import User, UserSession
-from tests.conftest import engine, session_factory
 
 
 @pytest.fixture(autouse=True)

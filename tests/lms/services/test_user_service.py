@@ -14,7 +14,6 @@ from hjudge.lms.errors import (
     UserWrongPasswordError,
 )
 from hjudge.lms.services.user import login, register
-from tests.conftest import engine, session_factory, uow
 
 USERNAME = "test"
 PASSWORD = "test"

@@ -7,13 +7,10 @@ from litestar.status_codes import HTTP_200_OK, HTTP_201_CREATED
 from litestar.testing import TestClient
 from sqlalchemy import Engine
 
-from hjudge.app import provide_app
 from hjudge.commons.db.uow import AbstractUnitOfWork
 from hjudge.lms.db.repositories.user import AbstractUserRepository
 from hjudge.lms.db.tables.user import user_session_table, user_table
 from hjudge.lms.models.user import hashed_password
-from hjudge.lms.services.user import register
-from tests.conftest import engine, uow
 
 
 @pytest.fixture(autouse=True, scope="function")
@@ -22,13 +19,6 @@ def clear_tables(engine: Engine):
         connection.execute(user_table.delete())
         connection.execute(user_session_table.delete())
         connection.commit()
-
-
-@pytest.fixture
-def app(uow) -> Litestar:
-    app = provide_app(uow)
-    app.debug = True
-    return app
 
 
 def build_user(username: str, password: str, name: str) -> dict[str, str]:
@@ -148,13 +138,3 @@ def test_login_unknown_user(
     # assert
     assert response.status_code == 400
     assert response.content.decode() == "Wrong credentials."
-
-
-# def test_login_unknown_user(uow: AbstractUnitOfWork):
-#     # with
-#     user = make_a_user_request()
-#     user = register(user["username"], user["password"], user["name"], uow)
-
-#     # do
-#     with pytest.raises(UserNotFoundError):
-#         login("whatever", "whatever", uow)
