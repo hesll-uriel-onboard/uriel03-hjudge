@@ -4,13 +4,14 @@ import os
 import pathlib
 
 import pytest
-from alembic.command import EnvironmentContext
 from alembic.config import Config
+from alembic.runtime.environment import EnvironmentContext
 from alembic.runtime.migration import RevisionStep
 from alembic.script import ScriptDirectory
 from sqlalchemy import Engine, create_engine
+from sqlalchemy.orm import sessionmaker
 
-from hjudge.commons.db.uow import SQLAlchemyUnitOfWork
+from hjudge.commons.db.uow import SessionFactoryCallable, SQLAlchemyUnitOfWork
 
 # from migrations.env import run_migrations
 
@@ -59,6 +60,11 @@ def engine() -> Engine:
     return DEFAULT_ENGINE
 
 
+@pytest.fixture(scope="session")
+def session_factory(engine) -> SessionFactoryCallable:
+    return sessionmaker(bind=engine, expire_on_commit=False)
+
+
 @pytest.fixture(scope="module")
-def uow(engine) -> SQLAlchemyUnitOfWork:
-    return SQLAlchemyUnitOfWork(engine)
+def uow(session_factory) -> SQLAlchemyUnitOfWork:
+    return SQLAlchemyUnitOfWork(session_factory)
