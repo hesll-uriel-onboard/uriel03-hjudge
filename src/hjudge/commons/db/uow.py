@@ -1,10 +1,12 @@
 import abc
-from typing import override
+from typing import Callable, override
 
-from sqlalchemy import Engine
-from sqlalchemy.orm import Session, create_session
+from sqlalchemy.orm import Session
 
-from hjudge.commons.db import AbstractRepository, SQLAlchemyAbstractRepository
+from hjudge.commons.db.repositories import (
+    AbstractRepository,
+    SQLAlchemyAbstractRepository,
+)
 from hjudge.commons.errors import UOWSessionNotFoundError
 from hjudge.lms.db.repositories.user import (
     AbstractUserRepository,
@@ -33,9 +35,10 @@ class AbstractUnitOfWork(abc.ABC):
         raise NotImplementedError
 
 
-SQLAlchemyRepositoryDict = dict[
+type SQLAlchemyRepositoryDict = dict[
     type[AbstractRepository], type[SQLAlchemyAbstractRepository]
 ]
+type SessionFactoryCallable = Callable[[], Session]
 DEFAULT_SQLALCHEMY_REPOSITORY_DICT: SQLAlchemyRepositoryDict = {
     AbstractUserRepository: SQLAlchemyUserRepository
 }
@@ -43,45 +46,49 @@ DEFAULT_SQLALCHEMY_REPOSITORY_DICT: SQLAlchemyRepositoryDict = {
 
 class SQLAlchemyUnitOfWork(AbstractUnitOfWork):
 
-    engine: Engine
-    _current_session: Session | None
+    session_factory: SessionFactoryCallable
+    _session: Session | None
     repositories_dict: SQLAlchemyRepositoryDict
 
     def __init__(
         self,
-        engine: Engine,
+        session_factory: SessionFactoryCallable,
         repositories_dict: SQLAlchemyRepositoryDict = DEFAULT_SQLALCHEMY_REPOSITORY_DICT,
     ):
-        self.engine = engine
-        self._current_session = None
+        self.session_factory = session_factory
+        self._session = None
         self.repositories_dict = repositories_dict
 
     def __enter__(self):
-        self._current_session = create_session(self.engine)
-        assert self._current_session is not None
+        self._session = self.session_factory()
+        print("!!!!!enter")
+        assert self._session is not None
         return super().__enter__()
 
     def __exit__(self, *args):
-        self.current_session.expunge_all()
-        return super().__exit__(*args)
+        super().__exit__(*args)
+        # self.session.flush()
+        self.session.expunge_all()
+        self.session.close()
+        self._session = None
 
     @property
-    def current_session(self) -> Session:
-        if self._current_session is None:
+    def session(self) -> Session:
+        if self._session is None:
+            print("!!!!!???")
             raise UOWSessionNotFoundError
-        return self._current_session
+        return self._session
 
     def create_repository(
         self, constructor: type[AbstractRepository]
     ) -> SQLAlchemyAbstractRepository:
         constructor = self.repositories_dict[constructor]
-        return constructor(session=self.current_session)
+        return constructor(session=self.session)
 
     @override
     def commit(self) -> None:
-        self.current_session.commit()
+        self.session.commit()
 
     @override
     def rollback(self):
-        self.current_session.rollback()
-        self._current_session = None
+        self.session.rollback()

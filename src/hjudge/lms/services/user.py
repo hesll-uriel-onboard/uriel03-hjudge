@@ -1,10 +1,14 @@
 from hjudge.commons.db.uow import AbstractUnitOfWork
-from hjudge.commons.errors import (
+from hjudge.lms.db.repositories.user import AbstractUserRepository
+from hjudge.lms.errors import (
     UserExistedError,
     UserNotFoundError,
     UserWrongPasswordError,
 )
-from hjudge.lms.db.repositories.user import AbstractUserRepository
+from hjudge.lms.models.entity_converter import (
+    as_user_entity,
+    as_user_session_entity,
+)
 from hjudge.lms.models.user import User, UserSession, hashed_password
 
 
@@ -20,7 +24,7 @@ def register(
             raise UserExistedError
 
         user = User(username=username, password=password, name=name)
-        user_repo.add_user(user)
+        user_repo.add_user(as_user_entity(user))
 
         uow.commit()
 
@@ -29,21 +33,21 @@ def register(
 
 def login(username: str, password: str, uow: AbstractUnitOfWork) -> UserSession:
     # TODO after MVP: disable usersession after a month
-    password = hashed_password(password)
     with uow:
         user_repo: AbstractUserRepository = uow.create_repository(
             AbstractUserRepository
         )  # pyright: ignore
 
-        user = user_repo.get_user(username)
-        if user is None:
+        user_entity = user_repo.get_user(username)
+        if user_entity is None:
             raise UserNotFoundError
-        print("======", user.password, password)
-        if user.password != password:
+        user = user_entity.as_model()
+
+        if user.password != hashed_password(password):
             raise UserWrongPasswordError
 
         user_session = UserSession(user=user)
-        user_repo.add_user_session(user_session)
+        user_repo.add_user_session(as_user_session_entity(user_session))
 
-        pass
+        uow.commit()
     return user_session

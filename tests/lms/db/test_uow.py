@@ -8,8 +8,12 @@ from hjudge.lms.db.repositories.user import (
     SQLAlchemyUserRepository,
 )
 from hjudge.lms.db.tables.user import user_session_table, user_table
-from hjudge.lms.models.user import User
-from tests.conftest import engine
+from hjudge.lms.models.entity_converter import (
+    as_user_entity,
+    as_user_session_entity,
+)
+from hjudge.lms.models.user import User, UserSession
+from tests.conftest import engine, session_factory
 
 
 @pytest.fixture(autouse=True)
@@ -20,12 +24,6 @@ def clear_tables(engine: Engine):
         connection.commit()
 
 
-# def uow(engine) -> SQLAlchemyUnitOfWork:
-#     uow = SQLAlchemyUnitOfWork(engine)
-#     with uow:
-#     return uow
-
-
 def test_add_a_user(uow: AbstractUnitOfWork):
     with uow:
         user_repo: SQLAlchemyUserRepository = uow.create_repository(
@@ -33,29 +31,40 @@ def test_add_a_user(uow: AbstractUnitOfWork):
         )  # pyright: ignore
         user = User(username="test", password="test", name="test")
 
-        user_repo.add_user(user)
+        user_repo.add_user(as_user_entity(user))
         uow.commit()
 
-    result = user_repo.get_user(user.username)
-    assert result is not None
-    assert result == user
+        result = user_repo.get_user(user.username)
+        assert result is not None
+        assert result.as_model() == user
 
 
 def test_add_a_user_session(uow: AbstractUnitOfWork):
+    # with
     with uow:
+        user = User(username="test", password="test", name="test")
         user_repo: SQLAlchemyUserRepository = uow.create_repository(
             AbstractUserRepository
         )  # pyright: ignore
-        user = User(username="test", password="test", name="test")
-
-        user_repo.add_user(user)
+        user_repo.add_user(as_user_entity(user))
         uow.commit()
-
-    result = user_repo.get_user(user.username)
-    assert result is not None
-    assert result == user
+    # act
+    with uow:
+        user_session = UserSession(user=user)
+        user_repo = uow.create_repository(
+            AbstractUserRepository
+        )  # pyright: ignore
+        user_repo.add_user_session(as_user_session_entity(user_session))
+        uow.commit()
+    # assert
+    with uow:
+        print(user_session)
+        result = user_repo.get_user_session(user_session.cookie)
+        assert result is not None
+        assert result.as_model() == user_session
+        uow.commit()
 
 
 def test_access_to_current_session_without_entering(uow: SQLAlchemyUnitOfWork):
     with pytest.raises(UOWSessionNotFoundError):
-        uow.current_session
+        uow.session

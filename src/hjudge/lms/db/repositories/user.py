@@ -1,7 +1,8 @@
-from sqlalchemy.orm import Session
-
-from hjudge.commons.db import AbstractRepository, SQLAlchemyAbstractRepository
-from hjudge.lms.models.user import User, UserSession
+from hjudge.commons.db.repositories import (
+    AbstractRepository,
+    SQLAlchemyAbstractRepository,
+)
+from hjudge.lms.db.entities.user import UserEntity, UserSessionEntity
 
 
 # Main class
@@ -11,16 +12,16 @@ class AbstractUserRepository(AbstractRepository):
     """
 
     # main functionalities
-    def get_user(self, username: str) -> User | None:
+    def get_user(self, username: str) -> UserEntity | None:
         raise NotImplementedError
 
-    def add_user(self, user: User):
+    def add_user(self, user: UserEntity):
         raise NotImplementedError
 
-    def get_user_session(self, cookie: str) -> UserSession | None:
+    def get_user_session(self, cookie: str) -> UserSessionEntity | None:
         raise NotImplementedError
 
-    def add_user_session(self, user_session: UserSession):
+    def add_user_session(self, user_session: UserSessionEntity):
         raise NotImplementedError
 
 
@@ -31,20 +32,22 @@ class SQLAlchemyUserRepository(
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
-    def get_user(self, username: str) -> User | None:
+    def get_user(self, username: str) -> UserEntity | None:
         return (
-            self.session.query(User).filter_by(username=username).one_or_none()
+            self.session.query(UserEntity)
+            .filter_by(username=username)
+            .one_or_none()
         )
 
-    def add_user(self, user: User):
+    def add_user(self, user: UserEntity):
         self.session.add(user)
 
-    def get_user_session(self, cookie: str) -> UserSession | None:
+    def get_user_session(self, cookie: str) -> UserSessionEntity | None:
         return (
-            self.session.query(UserSession)
+            self.session.query(UserSessionEntity)
             .filter_by(cookie=cookie)
             .one_or_none()
         )
 
-    def add_user_session(self, user_session: UserSession):
+    def add_user_session(self, user_session: UserSessionEntity):
         self.session.add(user_session)
