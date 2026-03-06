@@ -8,7 +8,7 @@ import pytest
 import sqlalchemy as sa
 
 from hjudge.commons.db.uow import AbstractUnitOfWork
-from hjudge.lms.db.tables.user import user_session_table, user_table
+from hjudge.lms.db.tables import user_session_table, user_table
 from hjudge.lms.errors import (
     UserNotFoundError,
     UserWrongPasswordError,

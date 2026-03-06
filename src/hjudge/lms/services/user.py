@@ -1,13 +1,10 @@
 from hjudge.commons.db.uow import AbstractUnitOfWork
+from hjudge.lms.db.entities.user import UserEntity, UserSessionEntity
 from hjudge.lms.db.repositories.user import AbstractUserRepository
 from hjudge.lms.errors import (
     UserExistedError,
     UserNotFoundError,
     UserWrongPasswordError,
-)
-from hjudge.lms.models.converters import (
-    as_user_entity,
-    as_user_session_entity,
 )
 from hjudge.lms.models.user import User, UserSession, hashed_password
 
@@ -23,7 +20,7 @@ def register(
             raise UserExistedError
 
         user = User(username=username, password=password, name=name).login()
-        user_repo.add_user(as_user_entity(user))
+        user_repo.add_user(UserEntity.from_model(user))
 
         uow.commit()
 
@@ -46,7 +43,7 @@ def login(username: str, password: str, uow: AbstractUnitOfWork) -> UserSession:
             raise UserWrongPasswordError
 
         user_session = UserSession(user=user)
-        user_repo.add_user_session(as_user_session_entity(user_session))
+        user_repo.add_user_session(UserSessionEntity.from_model(user_session))
 
         uow.commit()
     return user_session

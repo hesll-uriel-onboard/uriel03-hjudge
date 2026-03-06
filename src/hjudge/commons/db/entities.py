@@ -1,4 +1,5 @@
 import uuid
+from typing import Self
 from uuid import UUID
 
 from sqlalchemy.orm import (
@@ -7,6 +8,8 @@ from sqlalchemy.orm import (
     MappedAsDataclass,
     mapped_column,
 )
+
+from hjudge.commons.models import entity_dumps
 
 
 class BaseEntity(DeclarativeBase, MappedAsDataclass, kw_only=True):
@@ -17,6 +20,6 @@ class BaseEntity(DeclarativeBase, MappedAsDataclass, kw_only=True):
     def as_model(self):
         raise NotImplementedError
 
-    @staticmethod
-    def from_model(object):
-        raise NotImplementedError
+    @classmethod
+    def from_model(cls, object) -> Self:
+        return cls(**entity_dumps(object))

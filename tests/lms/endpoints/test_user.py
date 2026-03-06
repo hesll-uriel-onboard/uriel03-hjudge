@@ -9,7 +9,7 @@ from sqlalchemy import Engine
 
 from hjudge.commons.db.uow import AbstractUnitOfWork
 from hjudge.lms.db.repositories.user import AbstractUserRepository
-from hjudge.lms.db.tables.user import user_session_table, user_table
+from hjudge.lms.db.tables import user_session_table, user_table
 from hjudge.lms.models.user import hashed_password
 
 

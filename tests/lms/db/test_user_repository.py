@@ -1,3 +1,4 @@
+from hjudge.lms.db.entities.user import UserEntity, UserSessionEntity
 import pytest
 from sqlalchemy import Engine
 
@@ -6,11 +7,7 @@ from hjudge.lms.db.repositories.user import (
     AbstractUserRepository,
     SQLAlchemyUserRepository,
 )
-from hjudge.lms.db.tables.user import user_session_table, user_table
-from hjudge.lms.models.converters import (
-    as_user_entity,
-    as_user_session_entity,
-)
+from hjudge.lms.db.tables import user_session_table, user_table
 from hjudge.lms.models.user import User, UserSession
 
 
@@ -29,7 +26,7 @@ def test_add_a_user(uow: AbstractUnitOfWork):
         )  # pyright: ignore
         user = User(username="test", password="test", name="test")
 
-        user_repo.add_user(as_user_entity(user))
+        user_repo.add_user(UserEntity.from_model(user))
         uow.commit()
 
         result = user_repo.get_user(user.username)
@@ -44,7 +41,7 @@ def test_add_a_user_session(uow: AbstractUnitOfWork):
         user_repo: SQLAlchemyUserRepository = uow.create_repository(
             AbstractUserRepository
         )  # pyright: ignore
-        user_repo.add_user(as_user_entity(user))
+        user_repo.add_user(UserEntity.from_model(user))
         uow.commit()
     # act
     with uow:
@@ -52,7 +49,7 @@ def test_add_a_user_session(uow: AbstractUnitOfWork):
         user_repo = uow.create_repository(
             AbstractUserRepository
         )  # pyright: ignore
-        user_repo.add_user_session(as_user_session_entity(user_session))
+        user_repo.add_user_session(UserSessionEntity.from_model(user_session))
         uow.commit()
     # assert
     with uow:

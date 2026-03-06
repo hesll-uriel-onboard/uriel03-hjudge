@@ -10,3 +10,6 @@ debug:
 coverage:
 	uv run coverage run -m pytest
 	uv run coverage report --fail-under=80
+
+new-migrations:
+	uv run python migrations/new-version.py -m "${MSG}"
