@@ -61,7 +61,6 @@ class SQLAlchemyUnitOfWork(AbstractUnitOfWork):
 
     def __enter__(self):
         self._session = self.session_factory()
-        print("!!!!!enter")
         assert self._session is not None
         return super().__enter__()
 
@@ -75,7 +74,6 @@ class SQLAlchemyUnitOfWork(AbstractUnitOfWork):
     @property
     def session(self) -> Session:
         if self._session is None:
-            print("!!!!!???")
             raise UOWSessionNotFoundError
         return self._session
 

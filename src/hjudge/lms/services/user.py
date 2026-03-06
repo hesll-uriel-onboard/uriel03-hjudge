@@ -15,7 +15,6 @@ from hjudge.lms.models.user import User, UserSession, hashed_password
 def register(
     username: str, password: str, name: str, uow: AbstractUnitOfWork
 ) -> User:
-    password = hashed_password(password)
     with uow:
         user_repo: AbstractUserRepository = uow.create_repository(
             AbstractUserRepository
@@ -23,7 +22,7 @@ def register(
         if user_repo.get_user(username) is not None:
             raise UserExistedError
 
-        user = User(username=username, password=password, name=name)
+        user = User(username=username, password=password, name=name).login()
         user_repo.add_user(as_user_entity(user))
 
         uow.commit()

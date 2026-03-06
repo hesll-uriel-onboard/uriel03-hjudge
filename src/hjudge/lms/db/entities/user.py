@@ -1,7 +1,7 @@
 """Represents"""
 
 from datetime import datetime
-from typing import Self, override
+from typing import override
 from uuid import UUID
 
 from sqlalchemy import ForeignKey

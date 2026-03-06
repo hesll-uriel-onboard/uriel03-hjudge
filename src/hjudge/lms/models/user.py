@@ -2,6 +2,7 @@ import secrets
 import string
 from datetime import datetime
 from hashlib import sha256
+from typing import Self
 
 import pydantic
 
@@ -18,6 +19,10 @@ class User(Base):
     username: str
     password: str  # hashed
     name: str
+
+    def login(self) -> Self:
+        self.password = hashed_password(self.password)
+        return self
 
 
 class UserSession(Base):

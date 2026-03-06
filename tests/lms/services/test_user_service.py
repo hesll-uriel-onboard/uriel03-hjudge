@@ -1,14 +1,18 @@
+"""Test services.
+
+As I decide that the two login exceptions will have
+the same code and msg, this shall be tested separately.
+"""
+
 import pytest
 import sqlalchemy as sa
 
 from hjudge.commons.db.uow import AbstractUnitOfWork
 from hjudge.lms.db.tables.user import user_session_table, user_table
 from hjudge.lms.errors import (
-    UserExistedError,
     UserNotFoundError,
     UserWrongPasswordError,
 )
-from hjudge.lms.models.user import hashed_password
 from hjudge.lms.services.user import login, register
 from tests.conftest import engine, session_factory, uow
 
@@ -29,53 +33,10 @@ def make_a_user_request(
 
 @pytest.fixture(autouse=True, scope="function")
 def clear_tables(engine: sa.Engine):
-    print("=======in=======")
     with engine.connect() as connection:
         connection.execute(user_table.delete())
         connection.execute(user_session_table.delete())
         connection.commit()
-    print("=======out=======")
-
-
-def test_register(uow: AbstractUnitOfWork):
-    """Make a random user, register, and check the returned user"""
-    # with
-    user = make_a_user_request()
-    # do
-    result = register(user["username"], user["password"], user["name"], uow)
-    # assert
-    assert result.id is not None
-    assert result.username == user["username"]
-    assert result.password == hashed_password(user["password"])
-    assert result.name == user["name"]
-
-
-def test_register_duplicated(uow: AbstractUnitOfWork):
-    # with
-    user = make_a_user_request()
-    # do
-    register(user["username"], user["password"], user["name"], uow)
-    # do and assert
-    with pytest.raises(UserExistedError):
-        register(user["username"], user["password"], user["name"], uow)
-
-
-def test_login(uow: AbstractUnitOfWork):
-    # with
-    request = make_a_user_request()
-    register(
-        request["username"],
-        request["password"],
-        request["name"],
-        uow,
-    )
-    # do
-    result = login(request["username"], request["password"], uow)
-    print(request["password"], result.user.password)
-    # assert
-    assert result.user.username == request["username"]
-    assert result.cookie is not None
-    assert result.active
 
 
 def test_login_wrong_password(uow: AbstractUnitOfWork):

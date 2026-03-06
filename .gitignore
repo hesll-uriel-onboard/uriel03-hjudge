@@ -9,6 +9,11 @@ wheels/
 # Virtual environments
 .venv
 
+# Coverage test
+.coverage
+
+################# private ###############
+
 # Credentials
 postgres.env
 
