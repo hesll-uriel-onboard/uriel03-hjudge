@@ -2,7 +2,7 @@ import pytest
 import sqlalchemy as sa
 
 from hjudge.commons.db.uow import AbstractUnitOfWork
-from hjudge.commons.errors import (
+from hjudge.lms.errors import (
     UserExistedError,
     UserNotFoundError,
     UserWrongPasswordError,

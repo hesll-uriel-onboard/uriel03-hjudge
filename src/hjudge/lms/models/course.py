@@ -1,4 +1,5 @@
 from typing import List
+from uuid import UUID
 
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -24,7 +25,8 @@ class Lesson(ContentBase):
 
 class LessonExercise(ContentBase):
     __tablename__ = "LessonExercise"
-    course: Mapped["Course"] = mapped_column(ForeignKey("Course.id"))
+    lesson: Mapped["Lesson"] = mapped_column(ForeignKey("Lesson.id"))
+    exercise: Mapped[List[UUID]]
 
 
 print(Course.__table__.schema)

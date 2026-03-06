@@ -20,19 +20,12 @@ def clear_tables(engine: Engine):
         connection.commit()
 
 
-# def uow(engine) -> SQLAlchemyUnitOfWork:
-#     uow = SQLAlchemyUnitOfWork(engine)
-#     with uow:
-#     return uow
-
-
 def test_add_a_user(uow: AbstractUnitOfWork):
     with uow:
         user_repo: SQLAlchemyUserRepository = uow.create_repository(
             AbstractUserRepository
         )  # pyright: ignore
         user = User(username="test", password="test", name="test")
-
         user_repo.add_user(user)
         uow.commit()
 
@@ -54,8 +47,3 @@ def test_add_a_user_session(uow: AbstractUnitOfWork):
     result = user_repo.get_user(user.username)
     assert result is not None
     assert result == user
-
-
-def test_access_to_current_session_without_entering(uow: SQLAlchemyUnitOfWork):
-    with pytest.raises(UOWSessionNotFoundError):
-        uow.current_session

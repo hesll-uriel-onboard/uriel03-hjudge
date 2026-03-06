@@ -10,6 +10,14 @@ from hjudge.lms.db.repositories.user import (
     AbstractUserRepository,
     SQLAlchemyUserRepository,
 )
+from hjudge.oj.db.repositories.judge import (
+    AbstractExerciseRepository,
+    SQLAlchemyExerciseRepository,
+)
+from hjudge.oj.db.repositories.submission import (
+    AbstractSubmissionRepository,
+    SQLAlchemySubmissionRepository,
+)
 
 
 class AbstractUnitOfWork(abc.ABC):
@@ -37,7 +45,9 @@ SQLAlchemyRepositoryDict = dict[
     type[AbstractRepository], type[SQLAlchemyAbstractRepository]
 ]
 DEFAULT_SQLALCHEMY_REPOSITORY_DICT: SQLAlchemyRepositoryDict = {
-    AbstractUserRepository: SQLAlchemyUserRepository
+    AbstractUserRepository: SQLAlchemyUserRepository,
+    AbstractExerciseRepository: SQLAlchemyExerciseRepository,
+    AbstractSubmissionRepository: SQLAlchemySubmissionRepository,
 }
 
 
@@ -63,6 +73,7 @@ class SQLAlchemyUnitOfWork(AbstractUnitOfWork):
 
     def __exit__(self, *args):
         self.current_session.expunge_all()
+        self.current_session.close()
         return super().__exit__(*args)
 
     @property

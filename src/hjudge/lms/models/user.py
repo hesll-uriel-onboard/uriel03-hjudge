@@ -1,6 +1,5 @@
 import secrets
 import string
-import uuid
 from datetime import datetime
 from hashlib import sha256
 

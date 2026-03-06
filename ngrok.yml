@@ -1,0 +1,7 @@
+version: "3"
+agent:
+    authtoken: 1YT0EkbvgruODEFgSDXBbwYhlqg_4fhVNikBktGDUX9gVeDbY
+tunnels:
+   hjudge:
+      proto: http
+      addr: 8000
