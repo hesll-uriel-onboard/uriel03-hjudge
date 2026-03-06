@@ -1,6 +1,4 @@
 from litestar import Response, post
-from litestar.datastructures import Cookie
-from litestar.status_codes import HTTP_200_OK, HTTP_201_CREATED
 
 from hjudge.commons.db.uow import AbstractUnitOfWork
 from hjudge.commons.endpoints.responses import (
@@ -17,7 +15,6 @@ from hjudge.lms.endpoints.responses.user import (
     UserLoginResponse,
     UserRegisterResponse,
 )
-from hjudge.lms.errors import UserNotFoundError
 from hjudge.lms.services import user as user_services
 
 

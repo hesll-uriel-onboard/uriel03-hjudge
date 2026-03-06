@@ -16,7 +16,6 @@ from sqlalchemy.orm import sessionmaker
 from hjudge.app import provide_app
 from hjudge.commons.db.uow import (
     AbstractUnitOfWork,
-    SessionFactoryCallable,
     SQLAlchemyUnitOfWork,
 )
 
