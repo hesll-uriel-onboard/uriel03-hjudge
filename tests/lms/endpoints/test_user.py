@@ -13,7 +13,7 @@ from hjudge.lms.endpoints.requests.user import (
 )
 from hjudge.lms.models.user import User
 from hjudge.lms.services.user import register
-from tests.conftest import engine
+from tests.conftest import engine, uow
 
 
 @pytest.fixture(autouse=True, scope="function")

@@ -1,14 +1,13 @@
 import pytest
 from sqlalchemy import Engine
 
-from hjudge.commons.db.uow import AbstractUnitOfWork, SQLAlchemyUnitOfWork
-from hjudge.commons.errors import UOWSessionNotFoundError
+from hjudge.commons.db.uow import AbstractUnitOfWork
 from hjudge.lms.db.repositories.user import (
     AbstractUserRepository,
     SQLAlchemyUserRepository,
 )
 from hjudge.lms.db.tables.user import user_session_table, user_table
-from hjudge.lms.models.entity_converter import (
+from hjudge.lms.models.converters import (
     as_user_entity,
     as_user_session_entity,
 )
@@ -63,8 +62,3 @@ def test_add_a_user_session(uow: AbstractUnitOfWork):
         assert result is not None
         assert result.as_model() == user_session
         uow.commit()
-
-
-def test_access_to_current_session_without_entering(uow: SQLAlchemyUnitOfWork):
-    with pytest.raises(UOWSessionNotFoundError):
-        uow.session

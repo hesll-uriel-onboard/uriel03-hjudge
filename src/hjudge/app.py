@@ -1,10 +1,10 @@
 from litestar import Litestar
 from litestar.datastructures import State
+from sqlalchemy.orm.session import sessionmaker
 
 from hjudge.commons.db import DEFAULT_ENGINE
 from hjudge.commons.db.uow import AbstractUnitOfWork, SQLAlchemyUnitOfWork
 from hjudge.lms.endpoints.user import user_endpoints
-from sqlalchemy.orm.session import sessionmaker
 
 
 def provide_uow(uow: AbstractUnitOfWork):

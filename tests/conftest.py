@@ -61,8 +61,8 @@ def engine() -> Engine:
 
 
 @pytest.fixture(scope="session")
-def session_factory(engine) -> SessionFactoryCallable:
-    return sessionmaker(bind=engine, expire_on_commit=False)
+def session_factory() -> SessionFactoryCallable:
+    return sessionmaker(bind=create_engine(SQLITE_CONNECTION_STRING))
 
 
 @pytest.fixture(scope="module")

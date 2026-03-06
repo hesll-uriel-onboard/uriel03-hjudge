@@ -5,7 +5,7 @@ from hjudge.lms.errors import (
     UserNotFoundError,
     UserWrongPasswordError,
 )
-from hjudge.lms.models.entity_converter import (
+from hjudge.lms.models.converters import (
     as_user_entity,
     as_user_session_entity,
 )

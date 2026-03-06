@@ -3,36 +3,50 @@ from litestar.datastructures import Cookie
 from litestar.status_codes import HTTP_200_OK, HTTP_201_CREATED
 
 from hjudge.commons.db.uow import AbstractUnitOfWork
-from hjudge.lms.endpoints import COOKIE_NAME
+from hjudge.commons.endpoints.responses import (
+    AbstractResponse,
+    ErrorResponse,
+    get_litestar_response,
+)
+from hjudge.commons.errors import AbstractError
 from hjudge.lms.endpoints.requests.user import (
     UserLoginRequest,
     UserRegisterRequest,
 )
+from hjudge.lms.endpoints.responses.user import (
+    UserLoginResponse,
+    UserRegisterResponse,
+)
+from hjudge.lms.errors import UserNotFoundError
 from hjudge.lms.services import user as user_services
 
 
 @post("/login")
 async def login(uow: AbstractUnitOfWork, data: UserLoginRequest) -> Response:
-    return Response(
-        "",
-        cookies=[
-            Cookie(
-                key=COOKIE_NAME,
-                value=user_services.login(
-                    data.username, data.password, uow
-                ).cookie,
-            )
-        ],
-        status_code=HTTP_200_OK,
-    )
+    # try:
+    #     cookie
+    response: AbstractResponse
+    try:
+        cookie = user_services.login(data.username, data.password, uow).cookie
+        response = UserLoginResponse(cookie)
+    except AbstractError as e:
+        response = ErrorResponse(e)
+
+    return get_litestar_response(response)
 
 
 @post("/register")
 async def register(
     uow: AbstractUnitOfWork, data: UserRegisterRequest
 ) -> Response:
-    user_services.register(data.username, data.password, data.name, uow)
-    return Response("", status_code=HTTP_201_CREATED)
+    response: AbstractResponse
+    try:
+        user_services.register(data.username, data.password, data.name, uow)
+        response = UserRegisterResponse()
+    except AbstractError as e:
+        response = ErrorResponse(e)
+
+    return get_litestar_response(response)
 
 
 user_endpoints = [login, register]
