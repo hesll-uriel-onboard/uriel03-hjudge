@@ -5,7 +5,7 @@ from pydantic import UUID4, Field
 from typing_extensions import deprecated
 
 from hjudge.commons.models import Base
-from hjudge.oj.models.exercise import Exercise, JudgeEnum
+from hjudge.oj.models.judges import Exercise, JudgeEnum
 
 
 class Verdict(Enum):

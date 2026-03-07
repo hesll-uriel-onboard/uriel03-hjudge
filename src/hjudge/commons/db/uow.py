@@ -12,6 +12,10 @@ from hjudge.lms.db.repositories.user import (
     AbstractUserRepository,
     SQLAlchemyUserRepository,
 )
+from hjudge.oj.db.repositories.exercise import (
+    AbstractExerciseRepository,
+    SQLAlchemyExerciseRepostory,
+)
 
 
 class AbstractUnitOfWork(abc.ABC):
@@ -40,7 +44,8 @@ type SQLAlchemyRepositoryDict = dict[
 ]
 type SessionFactoryCallable = Callable[[], Session]
 DEFAULT_SQLALCHEMY_REPOSITORY_DICT: SQLAlchemyRepositoryDict = {
-    AbstractUserRepository: SQLAlchemyUserRepository
+    AbstractUserRepository: SQLAlchemyUserRepository,
+    AbstractExerciseRepository: SQLAlchemyExerciseRepostory,
 }
 
 

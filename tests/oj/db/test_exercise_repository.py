@@ -5,7 +5,12 @@ from hjudge.commons.db.uow import AbstractUnitOfWork
 from hjudge.oj.db.entities.exercise import ExerciseEntity
 from hjudge.oj.db.repositories.exercise import AbstractExerciseRepository
 from hjudge.oj.db.tables import exercise_table, submission_table
-from hjudge.oj.models.exercise import Exercise, JudgeEnum
+from hjudge.oj.models.judges import Exercise, JudgeEnum
+
+exercises_list = [
+    Exercise(judge=JudgeEnum.CODEFORCES, code=prob, title=prob)
+    for prob in ["abc", "def", "ghi", "jkl", "mno"]
+]
 
 
 @pytest.fixture(autouse=True)
@@ -36,3 +41,66 @@ def test_add_and_get_exercise(uow: AbstractUnitOfWork):
         result = result.as_model()
         uow.commit()
     assert result == exercise
+
+
+def test_add_batch(uow: AbstractUnitOfWork):
+    # act
+    with uow:
+        repo: AbstractExerciseRepository = uow.create_repository(
+            AbstractExerciseRepository
+        )  # pyright: ignore
+        repo.add_exercises(
+            [ExerciseEntity.from_model(exercise) for exercise in exercises_list]
+        )
+        uow.commit()
+    # assert
+    with uow:
+        repo = uow.create_repository(
+            AbstractExerciseRepository
+        )  # pyright: ignore
+        for exercise in exercises_list:
+            result = repo.get_exercise_by_judge_and_code(
+                exercise.judge, exercise.code
+            )
+            assert result is not None
+            assert result.judge == exercise.judge
+            assert result.code == exercise.code
+            assert result.title == exercise.title
+        uow.rollback()
+
+
+def test_add_batch_with_duplication(uow: AbstractUnitOfWork):
+    one = exercises_list[:3]
+    two = exercises_list[1:]
+    # with
+    with uow:
+        repo: AbstractExerciseRepository = uow.create_repository(
+            AbstractExerciseRepository
+        )  # pyright: ignore
+        repo.add_exercises(
+            [ExerciseEntity.from_model(exercise) for exercise in one]
+        )
+        uow.commit()
+    # act
+    with uow:
+        repo = uow.create_repository(
+            AbstractExerciseRepository
+        )  # pyright: ignore
+        repo.add_exercises(
+            [ExerciseEntity.from_model(exercise) for exercise in two]
+        )
+        uow.commit()
+    # assert
+    with uow:
+        repo = uow.create_repository(
+            AbstractExerciseRepository
+        )  # pyright: ignore
+        for exercise in exercises_list:
+            result = repo.get_exercise_by_judge_and_code(
+                exercise.judge, exercise.code
+            )
+            assert result is not None
+            assert result.judge == exercise.judge
+            assert result.code == exercise.code
+            assert result.title == exercise.title
+        uow.rollback()

@@ -1,7 +1,7 @@
 import sqlalchemy as sa
 
 from hjudge.commons.db import mapper_registry
-from hjudge.oj.models.exercise import JudgeEnum
+from hjudge.oj.models.judges import JudgeEnum
 from hjudge.oj.models.submission import Verdict
 
 exercise_table = sa.Table(

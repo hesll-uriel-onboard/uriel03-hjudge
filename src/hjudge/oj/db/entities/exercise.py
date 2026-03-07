@@ -3,7 +3,7 @@ from typing import override
 from sqlalchemy.orm import Mapped
 
 from hjudge.commons.db.entities import BaseEntity
-from hjudge.oj.models.exercise import Exercise, JudgeEnum
+from hjudge.oj.models.judges import Exercise, JudgeEnum
 
 
 class ExerciseEntity(BaseEntity):

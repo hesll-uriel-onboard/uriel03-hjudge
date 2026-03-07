@@ -1,3 +1,4 @@
+from hjudge.oj.endpoints.exercise import exercise_endpoints
 from litestar import Litestar
 from litestar.datastructures import State
 from sqlalchemy.orm.session import sessionmaker
@@ -15,7 +16,7 @@ def provide_uow(uow: AbstractUnitOfWork):
 
 
 def provide_app(uow: AbstractUnitOfWork):
-    return Litestar([] + user_endpoints, dependencies={"uow": provide_uow(uow)})
+    return Litestar([] + user_endpoints + exercise_endpoints, dependencies={"uow": provide_uow(uow)})
 
 
 app = provide_app(SQLAlchemyUnitOfWork(sessionmaker(bind=DEFAULT_ENGINE)))
