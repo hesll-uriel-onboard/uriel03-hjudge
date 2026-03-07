@@ -1,6 +1,3 @@
-from multiprocessing import Value
-import sys
-
 import litestar
 from litestar import get
 
@@ -10,7 +7,6 @@ from hjudge.commons.endpoints.responses import (
     get_litestar_response,
 )
 from hjudge.commons.errors import AbstractError
-from hjudge.oj.endpoints.requests import ExerciseRequest
 from hjudge.oj.endpoints.responses import ExerciseResponse
 from hjudge.oj.errors import ExerciseNotFoundError, JudgeNotExistedError
 from hjudge.oj.models.judges import JudgeEnum

@@ -1,5 +1,4 @@
 from json import JSONDecoder
-from turtle import title
 from typing import Any, ClassVar, Iterable, List, Self, override
 
 import requests
