@@ -134,3 +134,13 @@ def test_check_exercise_crawl_to_exist(
     result = services.check_exercise_existence(existed.judge, existed.code, DEFAULT_JUDGE_FACTORY, uow)
     # assert
     assert result == existed
+    with uow:
+        repo: AbstractExerciseRepository = uow.create_repository(
+            AbstractExerciseRepository
+        )  # pyright: ignore
+        result = repo.get_exercise_by_judge_and_code(existed.judge, existed.code)
+        assert result is not None
+        assert result.judge == existed.judge
+        assert result.code == existed.code
+        assert result.title == existed.title
+        
