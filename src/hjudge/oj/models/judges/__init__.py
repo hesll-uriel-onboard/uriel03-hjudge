@@ -1,10 +1,9 @@
 import abc
-from enum import Enum, StrEnum
-from json import JSONDecoder
-from typing import Any, Iterable, List, Protocol, Self, override
-from xml.etree import ElementTree as etree
+from enum import StrEnum
+from typing import Any, Iterable, Protocol, Self
 
-from hjudge.commons.endpoints.status_codes import HTTP_200_OK
+import requests
+
 from hjudge.commons.models import Base
 
 ################## data classes ##################
@@ -24,7 +23,35 @@ class Exercise(Base):
         raise NotImplementedError
 
 
+####### crawler class, for testing purpose, totally unnecessary #######
+class AbstractCrawler(abc.ABC):
+    """An interface that duplicate requests.get
+
+    For testing purpose, the request class
+    """
+
+    @abc.abstractmethod
+    def get(self, url: str, *args, **kwargs):
+        raise NotImplementedError
+
+
+class DefaultCrawler(AbstractCrawler):
+    def get(self, url: str, *args, **kwargs):
+        return requests.get(url=url, *args, **kwargs)
+
+
 class AbstractJudge(Protocol):
+    """An abstract interface of OJ's problem manager
+
+    Each judges shall have a mechanism to cached. This cached
+    shall be global, i.e. a static property of the OJ's class.
+    """
+
+    crawler: AbstractCrawler
+
+    def __init__(self, crawler: AbstractCrawler):
+        self.crawler = crawler
+
     @abc.abstractmethod
     def get_exercise_url(self, id: str) -> str:
         raise NotImplementedError
