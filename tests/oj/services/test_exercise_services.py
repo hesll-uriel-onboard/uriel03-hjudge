@@ -8,7 +8,12 @@ from hjudge.commons.db.repositories import AbstractRepository
 from hjudge.commons.db.uow import AbstractUnitOfWork
 from hjudge.oj.db.entities.exercise import ExerciseEntity
 from hjudge.oj.db.repositories.exercise import AbstractExerciseRepository
-from hjudge.oj.models.judges import AbstractJudge, Exercise, JudgeEnum
+from hjudge.oj.models.judges import (
+    AbstractJudge,
+    DefaultCrawler,
+    Exercise,
+    JudgeEnum,
+)
 from hjudge.oj.services import exercise as services
 
 exercises_list = [
@@ -49,9 +54,11 @@ class FakeRepo(AbstractExerciseRepository):
     def add_exercises(self, exercises: List[ExerciseEntity]):
         for exercise in exercises:
             self.add_exercise(exercise)
-    
+
     @override
-    def get_exercise_by_judge_and_code(self, judge: JudgeEnum, code: str) -> ExerciseEntity | None:
+    def get_exercise_by_judge_and_code(
+        self, judge: JudgeEnum, code: str
+    ) -> ExerciseEntity | None:
         for exercise in self.__exercises.values():
             if exercise.judge == judge and exercise.code == code:
                 return exercise
@@ -88,7 +95,9 @@ def fake_uow() -> FakeUoW:
     return FakeUoW()
 
 
-@pytest.mark.parametrize(["uow", "judge"], [(FakeUoW(), FakeJudge())])
+@pytest.mark.parametrize(
+    ["uow", "judge"], [(FakeUoW(), FakeJudge(DefaultCrawler()))]
+)
 def test_check_exercise_already_existed(
     uow: AbstractUnitOfWork, judge: AbstractJudge
 ):
@@ -112,7 +121,9 @@ def test_check_exercise_already_existed(
     assert result == existed
 
 
-@pytest.mark.parametrize(["uow", "judge"], [(FakeUoW(), FakeJudge())])
+@pytest.mark.parametrize(
+    ["uow", "judge"], [(FakeUoW(), FakeJudge(DefaultCrawler()))]
+)
 def test_check_exercise_crawl_to_exist(
     uow: AbstractUnitOfWork, judge: AbstractJudge
 ):

@@ -2,7 +2,7 @@ from hjudge.commons.db.uow import AbstractUnitOfWork
 from hjudge.oj.db.entities.exercise import ExerciseEntity
 from hjudge.oj.db.repositories.exercise import AbstractExerciseRepository
 from hjudge.oj.models.judges import Exercise, JudgeEnum
-from hjudge.oj.models.judges.factory import JudgeFactory
+from hjudge.oj.models.judges.factory import DEFAULT_JUDGE_FACTORY
 
 
 def check_exercise_existence(
@@ -22,7 +22,7 @@ def check_exercise_existence(
             return result
 
         # otherwise, try crawling
-        judge = JudgeFactory.create_from(judge_name)
+        judge = DEFAULT_JUDGE_FACTORY.create_from(judge_name)
         config = judge.get_batch_config(from_exercise=exercise_code)
         result_models = judge.crawl_exercises_batch(**config)
         repository.add_exercises(

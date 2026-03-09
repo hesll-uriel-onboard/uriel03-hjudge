@@ -1,6 +1,11 @@
 from typing import Type
 
-from hjudge.oj.models.judges import AbstractJudge, JudgeEnum
+from hjudge.oj.models.judges import (
+    AbstractCrawler,
+    AbstractJudge,
+    DefaultCrawler,
+    JudgeEnum,
+)
 from hjudge.oj.models.judges.codeforces import CodeforcesJudge
 
 
@@ -8,12 +13,18 @@ class JudgeFactory:
     __enum_to_judge__: dict[JudgeEnum, Type[AbstractJudge]] = {
         JudgeEnum.CODEFORCES: CodeforcesJudge
     }
-    __judges__: dict[JudgeEnum, AbstractJudge] = {}
+    __judges_dict__: dict[JudgeEnum, AbstractJudge] = {}
+    crawler: AbstractCrawler
 
-    @staticmethod
-    def create_from(judge: JudgeEnum):
-        result = JudgeFactory.__judges__.get(
-            judge, JudgeFactory.__enum_to_judge__[judge]()
+    def __init__(self, crawler: AbstractCrawler) -> None:
+        self.crawler = crawler
+
+    def create_from(self, judge: JudgeEnum):
+        result = self.__judges_dict__.get(
+            judge, self.__enum_to_judge__[judge](self.crawler)
         )
-        JudgeFactory.__judges__[judge] = result
+        self.__judges_dict__[judge] = result
         return result
+
+
+DEFAULT_JUDGE_FACTORY = JudgeFactory(DefaultCrawler())

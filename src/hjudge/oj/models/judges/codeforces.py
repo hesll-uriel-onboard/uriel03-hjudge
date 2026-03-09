@@ -1,14 +1,17 @@
 from json import JSONDecoder
 from typing import Any, ClassVar, Iterable, List, Self, override
 
-import requests
-
 from hjudge.commons.endpoints.status_codes import HTTP_200_OK
 from hjudge.oj.errors import (
     CodeforcesContestNotFoundError,
     ExerciseNotFoundError,
 )
-from hjudge.oj.models.judges import AbstractJudge, Exercise, JudgeEnum
+from hjudge.oj.models.judges import (
+    AbstractCrawler,
+    AbstractJudge,
+    Exercise,
+    JudgeEnum,
+)
 
 
 class CodeforcesExercise(Exercise):
@@ -29,9 +32,11 @@ class CodeforcesExercise(Exercise):
 
 
 class CodeforcesJudge(AbstractJudge):
+    __cached: dict[str, List[Exercise]] = {}
 
-    def __init__(self) -> None:
-        self.cached: dict[str, List[Exercise]] = {}
+    @property
+    def cached(self) -> dict[str, List[Exercise]]:
+        return CodeforcesJudge.__cached
 
     @override
     def get_batch_config(self, from_exercise: str) -> dict[str, Any]:
@@ -59,7 +64,7 @@ class CodeforcesJudge(AbstractJudge):
 
         result = []
         try:
-            response = requests.get(url)
+            response = self.crawler.get(url)
             if response.status_code != HTTP_200_OK:
                 raise ExerciseNotFoundError
 

@@ -18,8 +18,7 @@ from hjudge.commons.db.uow import (
     AbstractUnitOfWork,
     SQLAlchemyUnitOfWork,
 )
-
-# from migrations.env import run_migrations
+from hjudge.oj.models.judges.factory import DEFAULT_JUDGE_FACTORY
 
 CURRENT_DIRECTORY = pathlib.Path(__file__).parent
 NAME = ".db"
@@ -74,6 +73,6 @@ def uow(engine: Engine) -> Generator[AbstractUnitOfWork, None, None]:
 
 @pytest.fixture(scope="session")
 def app(uow: AbstractUnitOfWork) -> Litestar:
-    app = provide_app(uow)
+    app = provide_app(uow, DEFAULT_JUDGE_FACTORY)
     app.debug = True
     return app

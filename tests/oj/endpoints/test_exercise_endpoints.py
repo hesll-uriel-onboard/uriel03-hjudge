@@ -5,7 +5,7 @@ import pytest
 from litestar.app import Litestar
 from litestar.testing import TestClient
 
-from hjudge.oj.models.judges.factory import JudgeFactory
+from hjudge.oj.models.judges.factory import DEFAULT_JUDGE_FACTORY
 
 valid_problems = [
     {"judge": "CodeForces", "code": "566A", "title": "Matching Names"},
@@ -88,7 +88,7 @@ def test_chaining_check_exercise_existed(
             assert result["judge"] == exercise["judge"]
             assert result["code"] == exercise["code"]
             assert result["title"] == exercise["title"]
-            assert result["url"] == JudgeFactory.create_from(
+            assert result["url"] == DEFAULT_JUDGE_FACTORY.create_from(
                 exercise["judge"]
             ).get_exercise_url(exercise["code"])
 
