@@ -7,7 +7,6 @@ from hjudge.oj.errors import (
     ExerciseNotFoundError,
 )
 from hjudge.oj.models.judges import (
-    AbstractCrawler,
     AbstractJudge,
     Exercise,
     JudgeEnum,
