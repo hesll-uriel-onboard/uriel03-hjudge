@@ -13,8 +13,8 @@ from hjudge.oj.models.submission import Submission, Verdict
 class SubmissionEntity(BaseEntity):
     __tablename__ = "Submission"
     exercise_id: Mapped[UUID] = mapped_column(ForeignKey("Exercise.id"))
-    exercise: Mapped["ExerciseEntity"] = relationship("Exercise", init=False)
-    user: Mapped[UUID]
+    exercise: Mapped["ExerciseEntity"] = relationship(init=False)
+    user_id: Mapped[UUID]
     verdict: Mapped["Verdict"]
     submitted_at: Mapped[datetime]
 
@@ -23,7 +23,7 @@ class SubmissionEntity(BaseEntity):
         return Submission(
             id=self.id,
             exercise=self.exercise.as_model(),
-            user=self.user,
+            user_id=self.user_id,
             verdict=self.verdict,
             submitted_at=self.submitted_at,
         )

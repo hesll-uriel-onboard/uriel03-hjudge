@@ -11,7 +11,7 @@ class ExerciseRequest(BaseModel):
     code: str
 
 
-class SubmissionRequest(BaseModel):
+class SubmitRequest(BaseModel):
     user_id: UUID
     exercise_id: UUID
     verdict: Verdict

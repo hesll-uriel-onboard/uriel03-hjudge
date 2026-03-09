@@ -1,4 +1,5 @@
 from uuid import UUID
+
 import litestar
 from litestar import get, post
 
@@ -8,11 +9,14 @@ from hjudge.commons.endpoints.responses import (
     get_litestar_response,
 )
 from hjudge.commons.errors import AbstractError
-from hjudge.oj.endpoints.responses import ExerciseResponse
+from hjudge.oj.endpoints.requests import SubmitRequest
+from hjudge.oj.endpoints.responses import ExerciseResponse, SubmissionResponse
 from hjudge.oj.errors import ExerciseNotFoundError, JudgeNotExistedError
 from hjudge.oj.models.judges import JudgeEnum
 from hjudge.oj.models.judges.factory import JudgeFactory
-from hjudge.oj.services import exercise as services
+from hjudge.oj.models.submission import Verdict
+from hjudge.oj.services import exercise as exercise_services
+from hjudge.oj.services import submission as submission_services
 
 
 @get("/exercises")
@@ -27,7 +31,9 @@ async def check_exercise_existence(
             judge_enum = JudgeEnum(judge)
         except ValueError:
             raise JudgeNotExistedError
-        result = services.check_exercise_existence(judge_enum, code, judge_factory, uow)
+        result = exercise_services.check_exercise_existence(
+            judge_enum, code, judge_factory, uow
+        )
         if result is None:
             response = ErrorResponse(ExerciseNotFoundError())
         else:
@@ -42,13 +48,27 @@ async def check_exercise_existence(
     return get_litestar_response(response)
 
 
-@post("/submissions/{exercise_id:str}")
+@post("/submissions/")
 async def submit(
+    data: SubmitRequest,
+    uow: AbstractUnitOfWork,  # judge: JudgeEnum, code: str
+) -> litestar.Response:
+    try:
+        result = submission_services.submit(
+            data.user_id, data.exercise_id, data.verdict, uow
+        )
+        response = SubmissionResponse(result)
+    except AbstractError as e:
+        response = ErrorResponse(e)
+    return get_litestar_response(response)
+
+
+@get("/submissions/users/{user_id:str}")
+async def get_submissions_from_user(
     user_id: UUID,
-    exercise_id: str,
     uow: AbstractUnitOfWork,  # judge: JudgeEnum, code: str
 ) -> litestar.Response:
     raise NotImplementedError
 
 
-all_endpoints = [check_exercise_existence]
+all_endpoints = [check_exercise_existence, submit]

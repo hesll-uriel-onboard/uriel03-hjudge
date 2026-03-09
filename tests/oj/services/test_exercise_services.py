@@ -1,7 +1,6 @@
 from typing import Any, List
 from uuid import UUID
 
-from hjudge.oj.models.judges.factory import DEFAULT_JUDGE_FACTORY
 import pytest
 from typing_extensions import override
 
@@ -15,6 +14,7 @@ from hjudge.oj.models.judges import (
     Exercise,
     JudgeEnum,
 )
+from hjudge.oj.models.judges.factory import DEFAULT_JUDGE_FACTORY
 from hjudge.oj.services import exercise as services
 
 exercises_list = [
@@ -90,6 +90,10 @@ class FakeUoW(AbstractUnitOfWork):
     def rollback(self):
         self.committed = False
 
+    @override
+    def execute(self, *args, **kwargs):
+        raise NotImplementedError
+
 
 @pytest.fixture()
 def fake_uow() -> FakeUoW:
@@ -117,7 +121,9 @@ def test_check_exercise_already_existed(
     # and
     existed = exercises_list[0]
     # act
-    result = services.check_exercise_existence(existed.judge, existed.code, DEFAULT_JUDGE_FACTORY, uow)
+    result = services.check_exercise_existence(
+        existed.judge, existed.code, DEFAULT_JUDGE_FACTORY, uow
+    )
     # assert
     assert result == existed
 
@@ -131,16 +137,19 @@ def test_check_exercise_crawl_to_exist(
     # with
     existed = exercises_list[0]
     # act
-    result = services.check_exercise_existence(existed.judge, existed.code, DEFAULT_JUDGE_FACTORY, uow)
+    result = services.check_exercise_existence(
+        existed.judge, existed.code, DEFAULT_JUDGE_FACTORY, uow
+    )
     # assert
     assert result == existed
     with uow:
         repo: AbstractExerciseRepository = uow.create_repository(
             AbstractExerciseRepository
         )  # pyright: ignore
-        result = repo.get_exercise_by_judge_and_code(existed.judge, existed.code)
+        result = repo.get_exercise_by_judge_and_code(
+            existed.judge, existed.code
+        )
         assert result is not None
         assert result.judge == existed.judge
         assert result.code == existed.code
         assert result.title == existed.title
-        

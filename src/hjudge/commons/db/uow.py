@@ -1,7 +1,9 @@
 import abc
 from typing import Callable, override
 
+from hjudge.oj.db.repositories.submission import AbstractSubmissionRepository, SQLAlchemySubmissionRepository
 from sqlalchemy.orm import Session
+from sqlalchemy.sql.selectable import TypedReturnsRows
 
 from hjudge.commons.db.repositories import (
     AbstractRepository,
@@ -38,6 +40,10 @@ class AbstractUnitOfWork(abc.ABC):
     def rollback(self):
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def execute(self, *args, **kwargs):
+        raise NotImplementedError
+
 
 type SQLAlchemyRepositoryDict = dict[
     type[AbstractRepository], type[SQLAlchemyAbstractRepository]
@@ -46,6 +52,7 @@ type SessionFactoryCallable = Callable[[], Session]
 DEFAULT_SQLALCHEMY_REPOSITORY_DICT: SQLAlchemyRepositoryDict = {
     AbstractUserRepository: SQLAlchemyUserRepository,
     AbstractExerciseRepository: SQLAlchemyExerciseRepostory,
+    AbstractSubmissionRepository: SQLAlchemySubmissionRepository
 }
 
 
@@ -95,3 +102,7 @@ class SQLAlchemyUnitOfWork(AbstractUnitOfWork):
     @override
     def rollback(self):
         self.session.rollback()
+
+    @override
+    def execute(self, statement: TypedReturnsRows, *args, **kwargs):
+        self.session.execute(statement)

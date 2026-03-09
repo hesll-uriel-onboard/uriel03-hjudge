@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HJudge</title>
+</head>
+<body>
+    <div id="header">
+    {% block header %}
+        {% if user is defined %}
+        welcome {user.name}!
+        {% endif %}
+    {% endblock %}
+    </div>
+
+    <div id="footer">
+    {% block footer %}
+    from hesll
+    {% endblock %}
+    </div>
+</body>
+</html>
+
+<!-- context: user-->

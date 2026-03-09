@@ -55,12 +55,15 @@ def upgrade() -> None:
         ),
         sa.Column("user_id", sa.Uuid, nullable=False),
         sa.Column("verdict", sa.Enum(Verdict), nullable=False),
+        sa.Column("submitted_at", sa.DateTime, nullable=False),
     )
     pass
 
 
 def downgrade() -> None:
     """Downgrade schema."""
-    op.drop_table(EXERCISE_TABLE_NAME)
     op.drop_table(SUBMISSION_TABLE_NAME)
+    op.drop_table(EXERCISE_TABLE_NAME)
+    sa.Enum(JudgeEnum).drop(op.get_bind())
+    sa.Enum(Verdict).drop(op.get_bind())
     pass

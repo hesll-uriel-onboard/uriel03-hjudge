@@ -24,6 +24,6 @@ class UserJudge(Base):
 
 class Submission(Base):
     exercise: Exercise
-    user: UUID4
+    user_id: UUID4
     verdict: Verdict
     submitted_at: datetime = Field(default_factory=lambda: datetime.now())
