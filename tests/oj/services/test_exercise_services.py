@@ -1,6 +1,7 @@
 from typing import Any, List
 from uuid import UUID
 
+from hjudge.oj.models.judges.factory import DEFAULT_JUDGE_FACTORY
 import pytest
 from typing_extensions import override
 
@@ -28,8 +29,8 @@ class FakeJudge(AbstractJudge):
         return {}
 
     @override
-    def get_exercise_url(self, id: str) -> str:
-        return f"{id}"
+    def get_exercise_url(self, code: str) -> str:
+        return f"{code}"
 
     @override
     def crawl_exercises_batch(self, url: str, **kwargs) -> List[Exercise]:
@@ -116,7 +117,7 @@ def test_check_exercise_already_existed(
     # and
     existed = exercises_list[0]
     # act
-    result = services.check_exercise_existence(existed.judge, existed.code, uow)
+    result = services.check_exercise_existence(existed.judge, existed.code, DEFAULT_JUDGE_FACTORY, uow)
     # assert
     assert result == existed
 
@@ -130,6 +131,6 @@ def test_check_exercise_crawl_to_exist(
     # with
     existed = exercises_list[0]
     # act
-    result = services.check_exercise_existence(existed.judge, existed.code, uow)
+    result = services.check_exercise_existence(existed.judge, existed.code, DEFAULT_JUDGE_FACTORY, uow)
     # assert
     assert result == existed

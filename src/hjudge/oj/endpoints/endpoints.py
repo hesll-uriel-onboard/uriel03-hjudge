@@ -1,3 +1,4 @@
+from uuid import UUID
 import litestar
 from litestar import get, post
 
@@ -26,7 +27,7 @@ async def check_exercise_existence(
             judge_enum = JudgeEnum(judge)
         except ValueError:
             raise JudgeNotExistedError
-        result = services.check_exercise_existence(judge_enum, code, uow)
+        result = services.check_exercise_existence(judge_enum, code, judge_factory, uow)
         if result is None:
             response = ErrorResponse(ExerciseNotFoundError())
         else:
@@ -43,6 +44,7 @@ async def check_exercise_existence(
 
 @post("/submissions/{exercise_id:str}")
 async def submit(
+    user_id: UUID,
     exercise_id: str,
     uow: AbstractUnitOfWork,  # judge: JudgeEnum, code: str
 ) -> litestar.Response:

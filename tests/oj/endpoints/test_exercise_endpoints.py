@@ -14,6 +14,11 @@ valid_problems = [
         "code": "2205G",
         "title": "Simons and Diophantus Equation",
     },
+    {
+        "judge": "CodeForces",
+        "code": "2201F1",
+        "title": "Monotone Monochrome Matrices (Medium Version)",
+    },
 ]
 problem_with_invalid_judge = {
     "judge": "jfdksjfsdl",
@@ -54,7 +59,7 @@ two_valid_same_contest = [
     "exercises",
     [
         # 1
-        [(valid_problems[0], 200)],
+        [(valid_problems[0], 200), (valid_problems[2], 200)],
         # 2
         [
             (problem_with_invalid_judge, 400),

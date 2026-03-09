@@ -53,7 +53,7 @@ class AbstractJudge(Protocol):
         self.crawler = crawler
 
     @abc.abstractmethod
-    def get_exercise_url(self, id: str) -> str:
+    def get_exercise_url(self, code: str) -> str:
         raise NotImplementedError
 
     @abc.abstractmethod
