@@ -54,7 +54,6 @@ class CodeforcesJudge(AbstractJudge):
     @override
     def get_batch_config(self, from_exercise: str) -> dict[str, Any]:
         contest, _ = CodeforcesExercise.parse(from_exercise)
-        print(contest, _)
         return {
             "contest": contest,
             "url": f"https://codeforces.com/api/contest.standings?contestId={contest}",
@@ -63,7 +62,6 @@ class CodeforcesJudge(AbstractJudge):
     @override
     def get_exercise_url(self, code: str) -> str:
         contest, problem = CodeforcesExercise.parse(code)
-        print(contest, problem)
         return f"https://codeforces.com/problemset/problem/{contest}/{problem}"
 
     @override
@@ -80,7 +78,6 @@ class CodeforcesJudge(AbstractJudge):
         result = []
         try:
             response = self.crawler.get(url)
-            print(url, response.status_code)
             if response.status_code != HTTP_200_OK:
                 raise ExerciseNotFoundError
 
@@ -89,7 +86,6 @@ class CodeforcesJudge(AbstractJudge):
             )["result"]["problems"]
 
             for problem_info in problems_info:
-                print(problem_info)
                 exercise = CodeforcesExercise.create_from(data=problem_info)
                 result.append(exercise)
         except Exception:

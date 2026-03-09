@@ -36,4 +36,5 @@ def check_exercise_existence(
         result_entity = repository.get_exercise_by_judge_and_code(
             judge=judge_name, code=exercise_code
         )
+        uow.commit()
         return None if result_entity is None else result_entity.as_model()

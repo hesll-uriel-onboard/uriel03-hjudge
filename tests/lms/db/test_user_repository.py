@@ -53,7 +53,6 @@ def test_add_a_user_session(uow: AbstractUnitOfWork):
         uow.commit()
     # assert
     with uow:
-        print(user_session)
         result = user_repo.get_user_session(user_session.cookie)
         assert result is not None
         assert result.as_model() == user_session

@@ -55,6 +55,7 @@ class SQLAlchemyExerciseRepostory(
 
     @override
     def add_exercises(self, exercises: List[ExerciseEntity]):
+        print("here\n")
         result = (
             self.session.query(ExerciseEntity)
             .filter(

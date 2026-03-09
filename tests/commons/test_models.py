@@ -16,7 +16,6 @@ def test_entity_dumps():
 
     b = B(a=A(x=2), y="a")
     dump = entity_dumps(b)
-    print(dump)
     assert isinstance(dump["id"], UUID)
     assert isinstance(dump["a_id"], UUID)
     assert isinstance(dump["y"], str)
