@@ -10,7 +10,7 @@ from hjudge.commons.models import Base
 
 
 class JudgeEnum(StrEnum):
-    CODEFORCES = "CodeForces"
+    CODEFORCES = "CODEFORCES"
 
 
 class Exercise(Base):

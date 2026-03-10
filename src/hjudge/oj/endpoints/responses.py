@@ -1,4 +1,4 @@
-from typing import override
+from typing import List, override
 
 from hjudge.commons.endpoints.responses import AbstractResponse
 from hjudge.commons.endpoints.status_codes import HTTP_200_OK
@@ -14,8 +14,15 @@ class ExerciseResponse(AbstractResponse):
         super().__init__(status_code=HTTP_200_OK, content=result)
 
 
-class SubmissionResponse(AbstractResponse):
+class SubmitResponse(AbstractResponse):
     @override
     def __init__(self, submission: Submission):
         result = submission.model_dump()
+        super().__init__(status_code=HTTP_200_OK, content=result)
+
+
+class SubmissionsResponse(AbstractResponse):
+    @override
+    def __init__(self, submissions: List[Submission]):
+        result = [submission.model_dump() for submission in submissions]
         super().__init__(status_code=HTTP_200_OK, content=result)

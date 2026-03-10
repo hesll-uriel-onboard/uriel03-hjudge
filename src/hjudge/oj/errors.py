@@ -19,6 +19,13 @@ class ExerciseNotFoundError(AbstractError):
         super().__init__(HTTP_404_NOT_FOUND, "Exercise not found", *args)
 
 
+class SubmissionNotFoundError(AbstractError):
+    """Exercise not found"""
+
+    def __init__(self, *args: object) -> None:
+        super().__init__(HTTP_404_NOT_FOUND, "Submission not found", *args)
+
+
 class CodeforcesContestNotFoundError(AbstractError):
     """Codeforcs not found"""
 

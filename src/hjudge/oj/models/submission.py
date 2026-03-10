@@ -9,10 +9,10 @@ from hjudge.oj.models.judges import Exercise, JudgeEnum
 
 
 class Verdict(Enum):
-    AC = "Accepted"
-    WA = "Wrong Answer"
-    TLE = "Time Limit Exceeded"
-    RTE = "Run-Time Error"
+    AC = "AC"
+    WA = "WA"
+    TLE = "TLE"
+    RTE = "RTE"
 
 
 @deprecated("Will be use eventually")

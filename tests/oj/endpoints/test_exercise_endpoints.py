@@ -8,14 +8,14 @@ from litestar.testing import TestClient
 from hjudge.oj.models.judges.factory import DEFAULT_JUDGE_FACTORY
 
 valid_problems = [
-    {"judge": "CodeForces", "code": "566A", "title": "Matching Names"},
+    {"judge": "CODEFORCES", "code": "566A", "title": "Matching Names"},
     {
-        "judge": "CodeForces",
+        "judge": "CODEFORCES",
         "code": "2205G",
         "title": "Simons and Diophantus Equation",
     },
     {
-        "judge": "CodeForces",
+        "judge": "CODEFORCES",
         "code": "2201F1",
         "title": "Monotone Monochrome Matrices (Medium Version)",
     },
@@ -26,24 +26,24 @@ problem_with_invalid_judge = {
     "title": "Matching Names",
 }
 problems_with_invalid_code = {
-    "judge": "CodeForces",
+    "judge": "CODEFORCES",
     "code": "sfds",
     "title": "Matching Names",
 }
 non_existed_problem = {
-    "judge": "CodeForces",
+    "judge": "CODEFORCES",
     "code": "566X",
     "title": "Matching Names",
 }
 
 one_valid_one_invalid_same_contest = [
-    ({"judge": "CodeForces", "code": "566A", "title": "Matching Names"}, 200),
-    ({"judge": "CodeForces", "code": "566X", "title": "Matching Names"}, 404),
+    ({"judge": "CODEFORCES", "code": "566A", "title": "Matching Names"}, 200),
+    ({"judge": "CODEFORCES", "code": "566X", "title": "Matching Names"}, 404),
 ]
 two_valid_same_contest = [
-    ({"judge": "CodeForces", "code": "2185G", "title": "Mixing MEXes"}, 200),
+    ({"judge": "CODEFORCES", "code": "2185G", "title": "Mixing MEXes"}, 200),
     (
-        {"judge": "CodeForces", "code": "2185D", "title": "OutOfMemoryError"},
+        {"judge": "CODEFORCES", "code": "2185D", "title": "OutOfMemoryError"},
         200,
     ),
 ]

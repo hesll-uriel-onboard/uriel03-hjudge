@@ -1,3 +1,4 @@
+from typing import Any
 from uuid import UUID
 
 import litestar
@@ -10,7 +11,11 @@ from hjudge.commons.endpoints.responses import (
 )
 from hjudge.commons.errors import AbstractError
 from hjudge.oj.endpoints.requests import SubmitRequest
-from hjudge.oj.endpoints.responses import ExerciseResponse, SubmissionResponse
+from hjudge.oj.endpoints.responses import (
+    ExerciseResponse,
+    SubmissionsResponse,
+    SubmitResponse,
+)
 from hjudge.oj.errors import ExerciseNotFoundError, JudgeNotExistedError
 from hjudge.oj.models.judges import JudgeEnum
 from hjudge.oj.models.judges.factory import JudgeFactory
@@ -21,18 +26,17 @@ from hjudge.oj.services import submission as submission_services
 
 @get("/exercises")
 async def check_exercise_existence(
-    judge: str,
-    code: str,
+    query: dict[str, str],
     judge_factory: JudgeFactory,
     uow: AbstractUnitOfWork,  # judge: JudgeEnum, code: str
 ) -> litestar.Response:
     try:
         try:
-            judge_enum = JudgeEnum(judge)
-        except ValueError:
+            judge_enum = JudgeEnum[query["judge"]]
+        except Exception:
             raise JudgeNotExistedError
         result = exercise_services.check_exercise_existence(
-            judge_enum, code, judge_factory, uow
+            judge_enum, query["code"], judge_factory, uow
         )
         if result is None:
             response = ErrorResponse(ExerciseNotFoundError())
@@ -55,20 +59,28 @@ async def submit(
 ) -> litestar.Response:
     try:
         result = submission_services.submit(
-            data.user_id, data.exercise_id, data.verdict, uow
+            data.user_id, data.exercise_id, Verdict[data.verdict], uow
         )
-        response = SubmissionResponse(result)
+        response = SubmitResponse(result)
     except AbstractError as e:
         response = ErrorResponse(e)
     return get_litestar_response(response)
 
 
-@get("/submissions/users/{user_id:str}")
-async def get_submissions_from_user(
-    user_id: UUID,
+@get("/submissions")
+async def get_submissions_from_user_and_exercise(
+    query: dict[str, str],
     uow: AbstractUnitOfWork,  # judge: JudgeEnum, code: str
 ) -> litestar.Response:
-    raise NotImplementedError
+    print("okeokeoke")
+    user_id = UUID(query["user"])
+    exercise_id = UUID(query["exercise"])
+    try:
+        result = submission_services.get_submissions(user_id, exercise_id, uow)
+        response = SubmissionsResponse(result)
+    except AbstractError as e:
+        response = ErrorResponse(e)
+    return get_litestar_response(response)
 
 
-all_endpoints = [check_exercise_existence, submit]
+all_endpoints = [check_exercise_existence, submit, get_submissions_from_user_and_exercise]

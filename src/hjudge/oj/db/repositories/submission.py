@@ -1,7 +1,10 @@
 from typing import List, override
 from uuid import UUID
 
-from hjudge.commons.db.repositories import AbstractRepository, SQLAlchemyAbstractRepository
+from hjudge.commons.db.repositories import (
+    AbstractRepository,
+    SQLAlchemyAbstractRepository,
+)
 from hjudge.oj.db.entities.submission import SubmissionEntity
 
 
@@ -37,6 +40,7 @@ class SQLAlchemySubmissionRepository(
     ) -> List[SubmissionEntity]:
         return (
             self.session.query(SubmissionEntity)
-            .filter_by(exercise_id=exercise_id, user=user_id)
+            .filter_by(exercise_id=exercise_id, user_id=user_id)
+            .order_by(SubmissionEntity.submitted_at.desc())
             .all()
         )

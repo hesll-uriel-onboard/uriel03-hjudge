@@ -22,5 +22,4 @@ class BaseEntity(DeclarativeBase, MappedAsDataclass, kw_only=True):
 
     @classmethod
     def from_model(cls, object) -> Self:
-        print(object)
         return cls(**entity_dumps(object))
