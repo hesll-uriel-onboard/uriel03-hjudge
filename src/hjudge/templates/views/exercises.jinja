@@ -1,0 +1,20 @@
+{% extends "base.jinja" %}
+
+{% block content %}
+    <table>
+        <tr>
+            <th>Judge</th>
+            <th>Code</th>
+            <th>Title</th>
+            <th>Solved</th>
+        </tr>
+        {% for exercise in exercises %}
+        <tr>
+            <td>{{exercise["content"].judge.value}}</td>
+            <td>{{exercise["content"].code}}</td>
+            <td><a href="{{exercise["url"]}}">{{exercise["content"].title}}</a></td>
+            <td></td>
+        </tr>
+        {% endfor %}
+    </table>
+{% endblock %}

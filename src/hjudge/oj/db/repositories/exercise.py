@@ -15,6 +15,9 @@ class AbstractExerciseRepository(AbstractRepository):
     def get_exercise(self, id: UUID) -> ExerciseEntity | None:
         raise NotImplementedError
 
+    def get_all_exercises(self) -> List[ExerciseEntity]:
+        raise NotImplementedError
+
     def get_exercise_by_judge_and_code(
         self, judge: JudgeEnum, code: str
     ) -> ExerciseEntity | None:
@@ -38,6 +41,10 @@ class SQLAlchemyExerciseRepostory(
     @override
     def get_exercise(self, id: UUID) -> ExerciseEntity | None:
         return self.session.query(ExerciseEntity).filter_by(id=id).one_or_none()
+
+    @override
+    def get_all_exercises(self) -> List[ExerciseEntity]:
+        return self.session.query(ExerciseEntity).all()
 
     @override
     def get_exercise_by_judge_and_code(

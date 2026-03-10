@@ -1,5 +1,7 @@
+import os
 from pathlib import Path
 
+from hjudge.oj.endpoints.frontend import lms_frontends
 from litestar import Litestar
 from litestar.contrib.jinja import JinjaTemplateEngine
 from litestar.datastructures import State
@@ -11,35 +13,32 @@ from hjudge.commons.db.uow import (
     AbstractUOWFactory,
     SQLAlchemyUOWFactory,
 )
-from hjudge.lms.endpoints.backend.user import user_endpoints
+from hjudge.lms.endpoints.endpoints import lms_endpoints
 from hjudge.oj.endpoints.endpoints import all_endpoints as oj_endpoints
 from hjudge.oj.models.judges.factory import DEFAULT_JUDGE_FACTORY, JudgeFactory
 
 
-def provide_uow_factory(uow_factory: AbstractUOWFactory):
-    def yield_uow_factory(state: State):
-        state["uow_factory"] = uow_factory
-        yield uow_factory
-
-    return yield_uow_factory
+def yield_uow_factory(state: State):
+    yield state["uow_factory"]
 
 
-def provide_judge_factory(judge_factory: JudgeFactory):
-    def yield_judge_factory(state: State):
-        yield judge_factory
-
-    return yield_judge_factory
+def yield_judge_factory(state: State):
+    yield state["judge_factory"]
 
 
 def provide_app(uow_factory: AbstractUOWFactory, judge_factory: JudgeFactory):
     return Litestar(
-        [] + user_endpoints + oj_endpoints,
+        [] + lms_endpoints + oj_endpoints + lms_frontends,
         dependencies={
-            "uow_factory": provide_uow_factory(uow_factory),
-            "judge_factory": provide_judge_factory(judge_factory),
+            "uow_factory": yield_uow_factory,
+            "judge_factory": yield_judge_factory,
         },
         template_config=TemplateConfig(
-            directory=Path("templates"), engine=JinjaTemplateEngine
+            directory=Path(__file__).parent / "templates",
+            engine=JinjaTemplateEngine,
+        ),
+        state=State(
+            {"uow_factory": uow_factory, "judge_factory": judge_factory}
         ),
     )
 

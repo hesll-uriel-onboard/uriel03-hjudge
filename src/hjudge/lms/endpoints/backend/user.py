@@ -7,6 +7,7 @@ from hjudge.commons.endpoints.responses import (
     get_litestar_response,
 )
 from hjudge.commons.errors import AbstractError
+from hjudge.lms.endpoints.frontend.user import home
 from hjudge.lms.endpoints.requests.user import (
     UserLoginRequest,
     UserRegisterRequest,
@@ -18,7 +19,7 @@ from hjudge.lms.endpoints.responses.user import (
 from hjudge.lms.services import user as user_services
 
 
-@post("/login")
+@post("/api/login")
 async def login(
     uow_factory: AbstractUOWFactory, data: UserLoginRequest
 ) -> Response:
@@ -36,7 +37,7 @@ async def login(
     return get_litestar_response(response)
 
 
-@post("/register")
+@post("/api/register")
 async def register(
     uow_factory: AbstractUOWFactory, data: UserRegisterRequest
 ) -> Response:
@@ -50,6 +51,3 @@ async def register(
         response = ErrorResponse(e)
 
     return get_litestar_response(response)
-
-
-user_endpoints = [login, register]

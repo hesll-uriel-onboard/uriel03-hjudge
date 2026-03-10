@@ -1,0 +1,38 @@
+{% extends "base.jinja" %}
+
+{% block content %}
+    <input type="text" id="txtUsername" required>
+    <input type="password" placeholder="Enter Password" id="txtPassword" required>
+    <button type="submit" id="btnLogin">Login</button>
+    <script>
+        const button = document.getElementById("btnLogin");
+        button.addEventListener("click", myFunction)
+
+        function myFunction() {
+            button.disabled = false;
+            username = document.getElementById("txtUsername").value
+            password = document.getElementById("txtPassword").value
+            fetch("/login", {
+                method: "POST",
+                body: JSON.stringify({
+                    "username": username,
+                    "password": password,
+                }),
+                headers: {
+                    "Content-Type": "application/json; charset=UTF-8"
+                }
+            }).then((response) => {
+                if (response.ok) {
+                    window.location.replace("/")
+                } else {
+                    document.getElementById("msg").innerHTML = response.json().body
+                    button.enabled = true;
+                }
+            })
+        }
+    </script>
+    {# <form id="login" method="post"> #}
+        
+    {# </form> #}
+    <p id="msg"></p>
+{% endblock %}

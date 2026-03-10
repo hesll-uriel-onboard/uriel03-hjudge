@@ -75,7 +75,7 @@ def test_submit(app: Litestar, uow: AbstractUnitOfWork):
                 uow.commit()
 
             response = client.post(
-                "/submissions",
+                "/api/submissions",
                 content=build_submission(exercise_id, user_id, verdict),
             )
             assert response is not None
@@ -106,7 +106,7 @@ def test_submission(app: Litestar, uow: AbstractUnitOfWork):
     with TestClient(app) as client:
         for exercise in exercises:
             response = client.get(
-                f"/submissions?user={DEFAULT_USER_ID}&exercise={exercise.id}"
+                f"/api/submissions?user={DEFAULT_USER_ID}&exercise={exercise.id}"
             )
             assert response is not None
             assert response.status_code == 200
@@ -127,7 +127,7 @@ def test_submission(app: Litestar, uow: AbstractUnitOfWork):
 def test_submit_not_found(app: Litestar):
     with TestClient(app) as client:
         response = client.post(
-            "/submissions",
+            "/api/submissions",
             content="""{
                 "exercise_id":"81fbd94c-ce53-4ea9-ad8f-61613dbf6106",
                 "user_id": "81fbd94c-ce53-4ea9-ad8f-61613dbf6106",
@@ -140,7 +140,7 @@ def test_submit_not_found(app: Litestar):
 def test_submission_not_found(app: Litestar):
     with TestClient(app) as client:
         response = client.get(
-            "/submissions?user=81fbd94c-ce53-4ea9-ad8f-61613dbf6106&exercise=81fbd94c-ce53-4ea9-ad8f-61613dbf6106",
+            "/api/submissions?user=81fbd94c-ce53-4ea9-ad8f-61613dbf6106&exercise=81fbd94c-ce53-4ea9-ad8f-61613dbf6106",
         )
         assert response.status_code == 200
         result = json.JSONDecoder().decode(response.content.decode())

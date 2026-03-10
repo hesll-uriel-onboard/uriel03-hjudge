@@ -1,0 +1,10 @@
+<header>
+    {% if not(user == none) %}
+    welcome {{user.name}}!
+    {% else %}
+    welcome to us!<br>
+    <a href="/login">Login</a>
+    <a href="/register">Register</a>
+    {% endif %}
+    <a href="/exercises">Exercises</a>
+</header>

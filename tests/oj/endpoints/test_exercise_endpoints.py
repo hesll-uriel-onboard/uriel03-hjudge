@@ -80,10 +80,10 @@ def test_chaining_check_exercise_existed(
     for exercise, status_code in exercises:
         with TestClient(app=app) as client:
             client.get(
-                f"/exercises?judge={exercise["judge"]}&code={exercise["code"]}"
+                f"/api/exercises?judge={exercise["judge"]}&code={exercise["code"]}"
             )
             response = client.get(
-                f"/exercises?judge={exercise["judge"]}&code={exercise["code"]}"
+                f"/api/exercises?judge={exercise["judge"]}&code={exercise["code"]}"
             )
             assert response is not None
 

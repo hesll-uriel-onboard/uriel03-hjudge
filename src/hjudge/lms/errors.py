@@ -1,4 +1,6 @@
 ############## User ##############
+from litestar.status_codes import HTTP_401_UNAUTHORIZED
+
 from hjudge.commons.endpoints.status_codes import (
     HTTP_400_BAD_REQUEST,
     HTTP_409_CONFLICT,
@@ -34,3 +36,8 @@ class CookieExistedError(InternalError):
         self, msg: str = "Internal Server Error", *args: object
     ) -> None:
         super().__init__(msg, *args)
+
+
+class NotAuthorizedError(AbstractError):
+    def __init__(self, *args: object) -> None:
+        super().__init__(HTTP_401_UNAUTHORIZED, "Not authorized.", *args)

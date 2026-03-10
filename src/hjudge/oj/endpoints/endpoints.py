@@ -24,7 +24,7 @@ from hjudge.oj.services import exercise as exercise_services
 from hjudge.oj.services import submission as submission_services
 
 
-@get("/exercises")
+@get("/api/exercises")
 async def check_exercise_existence(
     query: dict[str, str],
     judge_factory: JudgeFactory,
@@ -52,7 +52,7 @@ async def check_exercise_existence(
     return get_litestar_response(response)
 
 
-@post("/submissions/")
+@post("/api/submissions/")
 async def submit(
     data: SubmitRequest,
     uow_factory: AbstractUOWFactory,  # judge: JudgeEnum, code: str
@@ -70,7 +70,7 @@ async def submit(
     return get_litestar_response(response)
 
 
-@get("/submissions")
+@get("/api/submissions")
 async def get_submissions_from_user_and_exercise(
     query: dict[str, str],
     uow_factory: AbstractUOWFactory,  # judge: JudgeEnum, code: str
