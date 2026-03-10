@@ -17,6 +17,7 @@ from hjudge.app import provide_app
 from hjudge.commons.db.uow import (
     AbstractUnitOfWork,
     SQLAlchemyUnitOfWork,
+    SQLAlchemyUOWFactory,
 )
 from hjudge.oj.models.judges.factory import DEFAULT_JUDGE_FACTORY
 
@@ -72,7 +73,9 @@ def uow(engine: Engine) -> Generator[AbstractUnitOfWork, None, None]:
 
 
 @pytest.fixture(scope="session")
-def app(uow: AbstractUnitOfWork) -> Litestar:
-    app = provide_app(uow, DEFAULT_JUDGE_FACTORY)
+def app(engine: Engine) -> Litestar:
+    app = provide_app(
+        SQLAlchemyUOWFactory(sessionmaker(bind=engine)), DEFAULT_JUDGE_FACTORY
+    )
     app.debug = True
     return app

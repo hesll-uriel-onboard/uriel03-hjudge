@@ -4,7 +4,7 @@ from uuid import UUID
 import litestar
 from litestar import get, post
 
-from hjudge.commons.db.uow import AbstractUnitOfWork
+from hjudge.commons.db.uow import AbstractUnitOfWork, AbstractUOWFactory
 from hjudge.commons.endpoints.responses import (
     ErrorResponse,
     get_litestar_response,
@@ -28,7 +28,7 @@ from hjudge.oj.services import submission as submission_services
 async def check_exercise_existence(
     query: dict[str, str],
     judge_factory: JudgeFactory,
-    uow: AbstractUnitOfWork,  # judge: JudgeEnum, code: str
+    uow_factory: AbstractUOWFactory,  # judge: JudgeEnum, code: str
 ) -> litestar.Response:
     try:
         try:
@@ -36,7 +36,7 @@ async def check_exercise_existence(
         except Exception:
             raise JudgeNotExistedError
         result = exercise_services.check_exercise_existence(
-            judge_enum, query["code"], judge_factory, uow
+            judge_enum, query["code"], judge_factory, uow_factory.create_uow()
         )
         if result is None:
             response = ErrorResponse(ExerciseNotFoundError())
@@ -55,11 +55,14 @@ async def check_exercise_existence(
 @post("/submissions/")
 async def submit(
     data: SubmitRequest,
-    uow: AbstractUnitOfWork,  # judge: JudgeEnum, code: str
+    uow_factory: AbstractUOWFactory,  # judge: JudgeEnum, code: str
 ) -> litestar.Response:
     try:
         result = submission_services.submit(
-            data.user_id, data.exercise_id, Verdict[data.verdict], uow
+            data.user_id,
+            data.exercise_id,
+            Verdict[data.verdict],
+            uow_factory.create_uow(),
         )
         response = SubmitResponse(result)
     except AbstractError as e:
@@ -70,17 +73,23 @@ async def submit(
 @get("/submissions")
 async def get_submissions_from_user_and_exercise(
     query: dict[str, str],
-    uow: AbstractUnitOfWork,  # judge: JudgeEnum, code: str
+    uow_factory: AbstractUOWFactory,  # judge: JudgeEnum, code: str
 ) -> litestar.Response:
     print("okeokeoke")
     user_id = UUID(query["user"])
     exercise_id = UUID(query["exercise"])
     try:
-        result = submission_services.get_submissions(user_id, exercise_id, uow)
+        result = submission_services.get_submissions(
+            user_id, exercise_id, uow_factory.create_uow()
+        )
         response = SubmissionsResponse(result)
     except AbstractError as e:
         response = ErrorResponse(e)
     return get_litestar_response(response)
 
 
-all_endpoints = [check_exercise_existence, submit, get_submissions_from_user_and_exercise]
+all_endpoints = [
+    check_exercise_existence,
+    submit,
+    get_submissions_from_user_and_exercise,
+]
