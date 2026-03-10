@@ -1,10 +1,43 @@
-<header>
-    {% if not(user == none) %}
-    welcome {{user.name}}!
-    {% else %}
-    welcome to us!<br>
-    <a href="/login">Login</a>
-    <a href="/register">Register</a>
-    {% endif %}
-    <a href="/exercises">Exercises</a>
-</header>
+<nav class="bg-white shadow-sm border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+            <div class="flex items-center">
+                <a href="/" class="text-xl font-bold text-indigo-600 hover:text-indigo-700">
+                    HJudge
+                </a>
+                <div class="ml-10 flex items-center space-x-4">
+                    <a href="/exercises" class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                        Exercises
+                    </a>
+                </div>
+            </div>
+            <div class="flex items-center">
+                {% if (user is defined) and not(user == none) %}
+                <div class="flex items-center space-x-4">
+                    <span class="text-gray-700">Welcome, <span class="font-semibold">{{ user.name }}</span></span>
+                    <button id="btnLogout" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                        Logout
+                    </button>
+                </div>
+                {% else %}
+                <div class="flex items-center space-x-3">
+                    <a href="/login" class="text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                        Login
+                    </a>
+                    <a href="/register" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                        Register
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</nav>
+{% if (user is defined) and not(user == none) %}
+<script>
+    document.getElementById("btnLogout")?.addEventListener("click", async function() {
+        document.cookie = "session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        window.location.href = "/";
+    });
+</script>
+{% endif %}

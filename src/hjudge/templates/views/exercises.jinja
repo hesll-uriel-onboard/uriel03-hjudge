@@ -1,20 +1,144 @@
 {% extends "base.jinja" %}
 
 {% block content %}
-    <table>
-        <tr>
-            <th>Judge</th>
-            <th>Code</th>
-            <th>Title</th>
-            <th>Solved</th>
-        </tr>
-        {% for exercise in exercises %}
-        <tr>
-            <td>{{exercise["content"].judge.value}}</td>
-            <td>{{exercise["content"].code}}</td>
-            <td><a href="{{exercise["url"]}}">{{exercise["content"].title}}</a></td>
-            <td></td>
-        </tr>
-        {% endfor %}
-    </table>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">Exercises</h1>
+        <p class="text-gray-600 mt-1">Browse and solve programming problems</p>
+    </div>
+
+    {% if exercises %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Judge</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Code</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Title</th>
+                        <th class="px-6 py-4 text-center text-sm font-semibold text-gray-700">Solved</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for exercise in exercises %}
+                    <tr class="hover:bg-gray-50 transition-colors" data-exercise-id="{{ exercise['content'].id }}">
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                                {% if exercise['content'].judge.value == 'CODEFORCES' %}
+                                bg-blue-100 text-blue-700
+                                {% else %}
+                                bg-gray-100 text-gray-700
+                                {% endif %}
+                            ">
+                                {{ exercise["content"].judge.value }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-gray-600 font-mono">{{ exercise["content"].code }}</td>
+                        <td class="px-6 py-4">
+                            <a href="{{ exercise['url'] }}" target="_blank"
+                                class="text-indigo-600 hover:text-indigo-700 font-medium hover:underline">
+                                {{ exercise["content"].title }}
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            {% if (user is defined) and not(user == none) %}
+                            <input type="checkbox"
+                                class="solved-checkbox w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer"
+                                data-exercise-id="{{ exercise['content'].id }}">
+                            {% else %}
+                            <span class="text-gray-400">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <h3 class="mt-4 text-lg font-medium text-gray-900">No exercises found</h3>
+        <p class="mt-2 text-gray-500">Check back later for new problems to solve.</p>
+    </div>
+    {% endif %}
+</div>
+
+{% if (user is defined) and not(user == none) %}
+<script>
+    const USER_ID = "{{ user.id }}";
+
+    // Fetch all submission statuses in parallel
+    async function checkSolvedStatus() {
+        const checkboxes = document.querySelectorAll('.solved-checkbox');
+        const exerciseIds = Array.from(checkboxes).map(cb => cb.dataset.exerciseId);
+
+        // Make all requests in parallel using Promise.all
+        const promises = exerciseIds.map(async exerciseId => {
+            try {
+                const response = await fetch(`/api/submissions?user=${USER_ID}&exercise=${exerciseId}`);
+                if (response.ok) {
+                    const submissions = await response.json();
+                    return { exerciseId, submissions };
+                }
+            } catch (error) {
+                console.error(`Failed to check status for exercise ${exerciseId}:`, error);
+            }
+            return { exerciseId, submissions: [] };
+        });
+
+        const results = await Promise.all(promises);
+
+        // Update checkboxes from results
+        results.forEach(({ exerciseId, submissions }) => {
+            const checkbox = document.querySelector(`.solved-checkbox[data-exercise-id="${exerciseId}"]`);
+            if (checkbox && submissions.some(s => s.verdict === "AC")) {
+                checkbox.checked = true;
+                checkbox.classList.add('bg-green-500', 'border-green-500');
+            }
+        });
+    }
+
+    async function handleCheckboxChange(event) {
+        const checkbox = event.target;
+        const exerciseId = checkbox.dataset.exerciseId;
+        const verdict = checkbox.checked ? "AC" : "WA";
+
+        checkbox.disabled = true;
+
+        try {
+            const response = await fetch('/api/submissions/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: USER_ID,
+                    exercise_id: exerciseId,
+                    verdict: verdict
+                })
+            });
+
+            if (response.ok) {
+                checkbox.classList.toggle('bg-green-500', checkbox.checked);
+                checkbox.classList.toggle('border-green-500', checkbox.checked);
+            } else {
+                checkbox.checked = !checkbox.checked;
+                console.error('Failed to update:', await response.json());
+            }
+        } catch (error) {
+            checkbox.checked = !checkbox.checked;
+            console.error('Failed to update submission:', error);
+        } finally {
+            checkbox.disabled = false;
+        }
+    }
+
+    document.querySelectorAll('.solved-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', handleCheckboxChange);
+    });
+
+    checkSolvedStatus();
+</script>
+{% endif %}
 {% endblock %}

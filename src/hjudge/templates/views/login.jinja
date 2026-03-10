@@ -1,38 +1,43 @@
 {% extends "base.jinja" %}
+{% from "components/form_macros.jinja" import auth_form, input %}
 
 {% block content %}
-    <input type="text" id="txtUsername" required>
-    <input type="password" placeholder="Enter Password" id="txtPassword" required>
-    <button type="submit" id="btnLogin">Login</button>
-    <script>
-        const button = document.getElementById("btnLogin");
-        button.addEventListener("click", myFunction)
+{% call auth_form("Sign in to your account", "Don't have an account?", {"href": "/register", "text": "Register"}, "Sign in", "Signing in...") %}
+    {{ input("txtUsername", "Username", "text") }}
+    {{ input("txtPassword", "Password", "password", "Enter your password") }}
+{% endcall %}
 
-        function myFunction() {
-            button.disabled = false;
-            username = document.getElementById("txtUsername").value
-            password = document.getElementById("txtPassword").value
-            fetch("/login", {
-                method: "POST",
-                body: JSON.stringify({
-                    "username": username,
-                    "password": password,
-                }),
-                headers: {
-                    "Content-Type": "application/json; charset=UTF-8"
-                }
-            }).then((response) => {
-                if (response.ok) {
-                    window.location.replace("/")
-                } else {
-                    document.getElementById("msg").innerHTML = response.json().body
-                    button.enabled = true;
-                }
-            })
+<script>
+    button.addEventListener("click", async function() {
+        const username = document.getElementById("txtUsername").value.trim();
+        const password = document.getElementById("txtPassword").value;
+
+        if (!username || !password) {
+            showError("Please fill in all fields");
+            return;
         }
-    </script>
-    {# <form id="login" method="post"> #}
-        
-    {# </form> #}
-    <p id="msg"></p>
+
+        setLoading(true);
+
+        try {
+            const response = await fetch("/api/login", {
+                method: "POST",
+                body: JSON.stringify({ username, password }),
+                headers: { "Content-Type": "application/json; charset=UTF-8" }
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                window.location.href = "/";
+            } else {
+                showError(data.detail || "Login failed");
+            }
+        } catch (error) {
+            showError("An error occurred. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    });
+</script>
 {% endblock %}
