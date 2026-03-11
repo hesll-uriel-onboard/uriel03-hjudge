@@ -21,7 +21,7 @@ class UserEntity(BaseEntity):
     name: Mapped[str]
 
     @override
-    def as_model(self) -> User:
+    def as_model(self, **kwargs) -> User:
         return User(
             id=self.id,
             username=self.username,
@@ -42,7 +42,7 @@ class UserSessionEntity(BaseEntity):
     active: Mapped[bool]
 
     @override
-    def as_model(self) -> UserSession:
+    def as_model(self, **kwargs) -> UserSession:
         return UserSession(
             id=self.id,
             user=self.user.as_model(),

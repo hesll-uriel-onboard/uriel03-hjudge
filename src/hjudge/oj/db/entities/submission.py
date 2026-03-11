@@ -19,7 +19,7 @@ class SubmissionEntity(BaseEntity):
     submitted_at: Mapped[datetime]
 
     @override
-    def as_model(self) -> Submission:
+    def as_model(self, **kwargs) -> Submission:
         return Submission(
             id=self.id,
             exercise=self.exercise.as_model(),

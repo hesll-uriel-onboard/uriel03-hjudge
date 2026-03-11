@@ -17,7 +17,7 @@ class BaseEntity(DeclarativeBase, MappedAsDataclass, kw_only=True):
         primary_key=True, default_factory=lambda: uuid.uuid4()
     )
 
-    def as_model(self):
+    def as_model(self, **kwargs):
         raise NotImplementedError
 
     @classmethod

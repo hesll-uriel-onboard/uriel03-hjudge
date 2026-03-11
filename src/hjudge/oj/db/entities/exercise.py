@@ -13,7 +13,7 @@ class ExerciseEntity(BaseEntity):
     title: Mapped[str]
 
     @override
-    def as_model(self) -> Exercise:
+    def as_model(self, **kwargs) -> Exercise:
         return Exercise(
             id=self.id, judge=self.judge, code=self.code, title=self.title
         )
