@@ -439,3 +439,74 @@ def test_get_lesson_by_slug_not_found(uow: AbstractUnitOfWork):
 
     # then: None is returned
     assert lesson is None
+
+
+# ============ Lesson Update Tests ============
+
+
+def test_update_lesson_by_admin(uow: AbstractUnitOfWork):
+    # given: a course with a lesson
+    user = user_services.register("creator", "password", "Creator", uow)
+    course = course_services.create_course(
+        title="Test Course",
+        content="Content",
+        slug="test-course",
+        creator_user_id=user.id,
+        uow=uow,
+    )
+    lesson = course_services.create_lesson(
+        course_id=course.id,
+        title="Original Title",
+        content="Original Content",
+        slug="lesson-1",
+        exercise_ids=[],
+        user_id=user.id,
+        uow=uow,
+    )
+
+    # when: admin updates the lesson
+    updated = course_services.update_lesson(
+        lesson_id=lesson.id,
+        title="New Title",
+        content="New Content",
+        exercise_ids=[],
+        user_id=user.id,
+        uow=uow,
+    )
+
+    # then: lesson is updated
+    assert updated.title == "New Title"
+    assert updated.content == "New Content"
+
+
+def test_update_lesson_by_non_admin(uow: AbstractUnitOfWork):
+    # given: a course with a lesson created by user1
+    user1 = user_services.register("creator", "password", "Creator", uow)
+    user2 = user_services.register("other", "password", "Other", uow)
+    course = course_services.create_course(
+        title="Test Course",
+        content="Content",
+        slug="test-course",
+        creator_user_id=user1.id,
+        uow=uow,
+    )
+    lesson = course_services.create_lesson(
+        course_id=course.id,
+        title="Original Title",
+        content="Original Content",
+        slug="lesson-1",
+        exercise_ids=[],
+        user_id=user1.id,
+        uow=uow,
+    )
+
+    # when: non-admin tries to update
+    with pytest.raises(NotCourseAdminError):
+        course_services.update_lesson(
+            lesson_id=lesson.id,
+            title="New Title",
+            content="New Content",
+            exercise_ids=[],
+            user_id=user2.id,
+            uow=uow,
+        )

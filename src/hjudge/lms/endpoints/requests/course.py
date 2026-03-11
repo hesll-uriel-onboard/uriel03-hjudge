@@ -21,5 +21,11 @@ class CreateLessonRequest(BaseModel):
     exercise_ids: list[UUID] = []
 
 
+class UpdateLessonRequest(BaseModel):
+    title: str
+    content: str
+    exercise_ids: list[UUID] = []
+
+
 class AddAdminRequest(BaseModel):
     user_id: UUID

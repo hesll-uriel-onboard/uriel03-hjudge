@@ -7,6 +7,7 @@ from litestar.response import Template
 from hjudge.commons.db.uow import AbstractUOWFactory
 from hjudge.lms.endpoints.authentication import authenticate_user
 from hjudge.lms.endpoints.responses.user import COOKIE_KEY
+from hjudge.lms.errors import NotCourseAdminError
 from hjudge.lms.services import course as course_services
 # from hjudge.oj.db.repositories.exercise import AbstractExerciseRepository
 
@@ -38,6 +39,33 @@ async def new_course_page(
     return Template(
         template_name="views/course/new.jinja",
         context={"user": user},
+    )
+
+
+@get("/courses/{slug:str}/edit", media_type=MediaType.HTML, include_in_schema=False)
+async def edit_course_page(
+    slug: str,
+    cookies: dict[str, str],
+    uow_factory: AbstractUOWFactory,
+) -> Template:
+    cookie: str | None = cookies.get(COOKIE_KEY)
+    user = authenticate_user(cookie, uow_factory.create_uow(), required=True)
+
+    course = course_services.get_course_by_slug(slug, uow_factory.create_uow())
+    if course is None:
+        # TODO: proper 404 handling
+        return Template(
+            template_name="views/course/index.jinja",
+            context={"user": user, "courses": []},
+        )
+
+    # Check if user is admin
+    if not course_services.is_admin(course.id, user.id, uow_factory.create_uow()):
+        raise NotCourseAdminError()
+
+    return Template(
+        template_name="views/course/edit.jinja",
+        context={"user": user, "course": course},
     )
 
 
@@ -89,12 +117,41 @@ async def new_lesson_page(
 
     # Check if user is admin
     if not course_services.is_admin(course.id, user.id, uow_factory.create_uow()):
-        from hjudge.lms.errors import NotCourseAdminError
         raise NotCourseAdminError()
 
     return Template(
         template_name="views/course/lesson/new.jinja",
         context={"user": user, "course": course},
+    )
+
+
+@get("/courses/{course_slug:str}/lessons/{lesson_slug:str}/edit", media_type=MediaType.HTML, include_in_schema=False)
+async def edit_lesson_page(
+    course_slug: str,
+    lesson_slug: str,
+    cookies: dict[str, str],
+    uow_factory: AbstractUOWFactory,
+) -> Template:
+    cookie: str | None = cookies.get(COOKIE_KEY)
+    user = authenticate_user(cookie, uow_factory.create_uow(), required=True)
+
+    lesson = course_services.get_lesson_by_slug(course_slug, lesson_slug, uow_factory.create_uow())
+    if lesson is None:
+        # TODO: proper 404 handling
+        return Template(
+            template_name="views/course/index.jinja",
+            context={"user": user, "courses": []},
+        )
+
+    course = lesson.course
+
+    # Check if user is admin
+    if not course_services.is_admin(course.id, user.id, uow_factory.create_uow()):
+        raise NotCourseAdminError()
+
+    return Template(
+        template_name="views/course/lesson/edit.jinja",
+        context={"user": user, "course": course, "lesson": lesson},
     )
 
 
@@ -118,6 +175,10 @@ async def lesson_detail_page(
 
     course = lesson.course
     lessons = course_services.list_lessons(course.id, uow_factory.create_uow())
+
+    is_admin = False
+    if user is not None:
+        is_admin = course_services.is_admin(course.id, user.id, uow_factory.create_uow())
 
     # Find previous and next lessons
     prev_lesson = None
@@ -151,6 +212,7 @@ async def lesson_detail_page(
             "lesson": lesson,
             "prev_lesson": prev_lesson,
             "next_lesson": next_lesson,
+            "is_admin": is_admin,
             # "exercises": exercises,
         },
     )

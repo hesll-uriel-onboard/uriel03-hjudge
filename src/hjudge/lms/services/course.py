@@ -195,6 +195,41 @@ def get_lesson_by_slug(
         return lesson_entity.as_model()
 
 
+def update_lesson(
+    lesson_id: UUID,
+    title: str,
+    content: str,
+    exercise_ids: list[UUID],
+    user_id: UUID,
+    uow: AbstractUnitOfWork,
+) -> Lesson:
+    """Update lesson. Must be course admin."""
+    with uow:
+        lesson_repo: AbstractLessonRepository = uow.create_repository(
+            AbstractLessonRepository
+        )  # pyright: ignore
+        admin_repo: AbstractCourseAdminRepository = uow.create_repository(
+            AbstractCourseAdminRepository
+        )  # pyright: ignore
+
+        # Get lesson
+        lesson_entity = lesson_repo.get_lesson(lesson_id)
+        if lesson_entity is None:
+            raise CourseNotFoundError
+
+        # Check if user is admin
+        if not admin_repo.is_admin(lesson_entity.course_id, user_id):
+            raise NotCourseAdminError
+
+        # Update fields
+        lesson_entity.title = title
+        lesson_entity.content = content
+        lesson_entity.exercise_ids = [str(eid) for eid in exercise_ids]
+        uow.commit()
+
+        return lesson_entity.as_model()
+
+
 def list_courses(uow: AbstractUnitOfWork) -> list[Course]:
     """List all courses."""
     with uow:

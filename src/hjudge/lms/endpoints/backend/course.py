@@ -15,6 +15,7 @@ from hjudge.lms.endpoints.requests.course import (
     CreateCourseRequest,
     CreateLessonRequest,
     UpdateCourseRequest,
+    UpdateLessonRequest,
 )
 from hjudge.lms.endpoints.responses.course import (
     CourseListResponse,
@@ -162,6 +163,42 @@ async def get_lesson(
         response = ErrorResponse(CourseNotFoundError())
     else:
         response = LessonResponse(lesson)
+    return get_litestar_response(response)
+
+
+@patch("/api/courses/{course_slug:str}/lessons/{lesson_slug:str}")
+async def update_lesson(
+    request: Request,
+    uow_factory: AbstractUOWFactory,
+    course_slug: str,
+    lesson_slug: str,
+    data: UpdateLessonRequest,
+) -> Response:
+    response: AbstractResponse
+    try:
+        cookie = request.cookies.get(COOKIE_KEY)
+        user = authenticate_user(cookie, uow_factory.create_uow(), required=True)
+        if user is None:
+            raise NotAuthorizedError()
+
+        lesson = course_services.get_lesson_by_slug(
+            course_slug, lesson_slug, uow_factory.create_uow()
+        )
+        if lesson is None:
+            raise CourseNotFoundError()
+
+        updated = course_services.update_lesson(
+            lesson_id=lesson.id,
+            title=data.title,
+            content=data.content,
+            exercise_ids=data.exercise_ids,
+            user_id=user.id,
+            uow=uow_factory.create_uow(),
+        )
+        response = LessonResponse(updated)
+    except AbstractError as e:
+        response = ErrorResponse(e)
+
     return get_litestar_response(response)
 
 

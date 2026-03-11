@@ -271,3 +271,55 @@ def test_remove_admin(app: Litestar, uow: AbstractUnitOfWork):
     # then: admin is removed
     assert response.status_code == HTTP_200_OK
     assert not course_services.is_admin(course.id, admin2.id, uow)
+
+
+# ============ Lesson Update Tests ============
+
+
+def build_update_lesson_request(title: str, content: str, exercise_ids: list = None) -> str:
+    return json.dumps(
+        {"title": title, "content": content, "exercise_ids": exercise_ids or []}
+    )
+
+
+def test_update_lesson_by_admin(app: Litestar, uow: AbstractUnitOfWork):
+    # given: a course with a lesson
+    user = user_services.register("creator", "password", "Creator", uow)
+    course = course_services.create_course("Test Course", "Content", "test-course", user.id, uow)
+    course_services.create_lesson(course.id, "Original", "Original", "lesson-1", [], user.id, uow)
+    session = user_services.login("creator", "password", uow)
+    cookie = session.cookie
+
+    # when: admin updates lesson
+    with TestClient(app=app) as client:
+        client.cookies.set("cookie", cookie)
+        response = client.patch(
+            "/api/courses/test-course/lessons/lesson-1",
+            content=build_update_lesson_request("Updated", "Updated"),
+        )
+
+    # then: lesson is updated
+    assert response.status_code == HTTP_200_OK
+    data = response.json()
+    assert data["title"] == "Updated"
+
+
+def test_update_lesson_by_non_admin(app: Litestar, uow: AbstractUnitOfWork):
+    # given: a course with a lesson created by user1
+    user1 = user_services.register("creator", "password", "Creator", uow)
+    user2 = user_services.register("other", "password", "Other", uow)
+    course = course_services.create_course("Test Course", "Content", "test-course", user1.id, uow)
+    course_services.create_lesson(course.id, "Original", "Original", "lesson-1", [], user1.id, uow)
+    session = user_services.login("other", "password", uow)
+    cookie = session.cookie
+
+    # when: non-admin tries to update lesson
+    with TestClient(app=app) as client:
+        client.cookies.set("cookie", cookie)
+        response = client.patch(
+            "/api/courses/test-course/lessons/lesson-1",
+            content=build_update_lesson_request("Updated", "Updated"),
+        )
+
+    # then: returns 401
+    assert response.status_code == HTTP_401_UNAUTHORIZED

@@ -14,6 +14,7 @@ lms_endpoints = [
     backend_course.create_lesson,
     backend_course.list_lessons,
     backend_course.get_lesson,
+    backend_course.update_lesson,
     backend_course.add_admin,
     backend_course.remove_admin,
     frontend_user.home,
@@ -21,7 +22,9 @@ lms_endpoints = [
     frontend_user.login,
     frontend_course.courses_page,
     frontend_course.new_course_page,
+    frontend_course.edit_course_page,
     frontend_course.course_detail_page,
     frontend_course.new_lesson_page,
+    frontend_course.edit_lesson_page,
     frontend_course.lesson_detail_page,
 ]

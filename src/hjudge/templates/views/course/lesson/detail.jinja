@@ -11,7 +11,14 @@
 
     <!-- Lesson Content -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-6">{{ lesson.title }}</h1>
+        <div class="flex justify-between items-start">
+            <h1 class="text-3xl font-bold text-gray-900 mb-6">{{ lesson.title }}</h1>
+            {% if is_admin %}
+            <a href="/courses/{{ course.slug }}/lessons/{{ lesson.slug }}/edit" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                Edit Lesson
+            </a>
+            {% endif %}
+        </div>
         <div class="prose max-w-none text-gray-700">
             {{ lesson.content }}
         </div>
