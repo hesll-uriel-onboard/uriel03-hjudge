@@ -18,7 +18,7 @@ async def get_exercises(
     judge_factory: JudgeFactory,
 ) -> Template | ErrorResponse:
     cookie: str | None = cookies.get(COOKIE_KEY)
-    user = authenticate_user(cookie, uow_factory.create_uow())
+    user = authenticate_user(cookie, uow_factory.create_uow(), required=False)
     # TODO: put this in a service
     try:
         with uow_factory.create_uow() as uow:

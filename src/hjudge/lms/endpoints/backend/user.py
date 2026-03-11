@@ -1,6 +1,6 @@
-from litestar import Response, post
+from litestar import Request, Response, post
 
-from hjudge.commons.db.uow import AbstractUnitOfWork, AbstractUOWFactory
+from hjudge.commons.db.uow import AbstractUOWFactory
 from hjudge.commons.endpoints.responses import (
     AbstractResponse,
     ErrorResponse,
@@ -13,7 +13,9 @@ from hjudge.lms.endpoints.requests.user import (
     UserRegisterRequest,
 )
 from hjudge.lms.endpoints.responses.user import (
+    COOKIE_KEY,
     UserLoginResponse,
+    UserLogoutResponse,
     UserRegisterResponse,
 )
 from hjudge.lms.services import user as user_services
@@ -51,3 +53,11 @@ async def register(
         response = ErrorResponse(e)
 
     return get_litestar_response(response)
+
+
+@post("/api/logout")
+async def logout(request: Request, uow_factory: AbstractUOWFactory) -> Response:
+    cookie = request.cookies.get(COOKIE_KEY)
+    if cookie:
+        user_services.logout(cookie, uow_factory.create_uow())
+    return get_litestar_response(UserLogoutResponse())

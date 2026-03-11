@@ -3,6 +3,7 @@ from hjudge.lms.endpoints.frontend import user as frontend
 
 lms_endpoints = [
     backend.login,
+    backend.logout,
     backend.register,
     frontend.home,
     frontend.register,

@@ -20,7 +20,7 @@ async def home(
     uow_factory: AbstractUOWFactory,
 ) -> Template:
     cookie: str | None = cookies.get(COOKIE_KEY)
-    user = authenticate_user(cookie, uow_factory.create_uow())
+    user = authenticate_user(cookie, uow_factory.create_uow(), required=False)
     return Template(
         template_name="views/home.jinja",
         context={"user": user},

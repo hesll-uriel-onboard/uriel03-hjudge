@@ -24,6 +24,9 @@ class AbstractUserRepository(AbstractRepository):
     def add_user_session(self, user_session: UserSessionEntity):
         raise NotImplementedError
 
+    def deactivate_user_session(self, cookie: str):
+        raise NotImplementedError
+
 
 class SQLAlchemyUserRepository(
     SQLAlchemyAbstractRepository, AbstractUserRepository
@@ -45,9 +48,14 @@ class SQLAlchemyUserRepository(
     def get_user_session(self, cookie: str) -> UserSessionEntity | None:
         return (
             self.session.query(UserSessionEntity)
-            .filter_by(cookie=cookie)
+            .filter_by(cookie=cookie, active=True)
             .one_or_none()
         )
 
     def add_user_session(self, user_session: UserSessionEntity):
         self.session.add(user_session)
+
+    def deactivate_user_session(self, cookie: str):
+        self.session.query(UserSessionEntity).filter_by(cookie=cookie).update(
+            {"active": False}
+        )

@@ -47,3 +47,13 @@ def login(username: str, password: str, uow: AbstractUnitOfWork) -> UserSession:
 
         uow.commit()
     return user_session
+
+
+def logout(cookie: str, uow: AbstractUnitOfWork):
+    with uow:
+        user_repo: AbstractUserRepository = uow.create_repository(
+            AbstractUserRepository
+        )  # pyright: ignore
+
+        user_repo.deactivate_user_session(cookie)
+        uow.commit()
