@@ -9,6 +9,14 @@ from hjudge.commons.db.repositories import (
     SQLAlchemyAbstractRepository,
 )
 from hjudge.commons.errors import UOWSessionNotFoundError
+from hjudge.lms.db.repositories.course import (
+    AbstractCourseRepository,
+    AbstractCourseAdminRepository,
+    AbstractLessonRepository,
+    SQLAlchemyCourseRepository,
+    SQLAlchemyCourseAdminRepository,
+    SQLAlchemyLessonRepository,
+)
 from hjudge.lms.db.repositories.user import (
     AbstractUserRepository,
     SQLAlchemyUserRepository,
@@ -56,6 +64,9 @@ DEFAULT_SQLALCHEMY_REPOSITORY_DICT: SQLAlchemyRepositoryDict = {
     AbstractUserRepository: SQLAlchemyUserRepository,
     AbstractExerciseRepository: SQLAlchemyExerciseRepostory,
     AbstractSubmissionRepository: SQLAlchemySubmissionRepository,
+    AbstractCourseRepository: SQLAlchemyCourseRepository,
+    AbstractLessonRepository: SQLAlchemyLessonRepository,
+    AbstractCourseAdminRepository: SQLAlchemyCourseAdminRepository,
 }
 
 

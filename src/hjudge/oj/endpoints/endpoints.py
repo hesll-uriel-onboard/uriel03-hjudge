@@ -10,6 +10,7 @@ from hjudge.commons.endpoints.responses import (
     get_litestar_response,
 )
 from hjudge.commons.errors import AbstractError
+from hjudge.oj.db.repositories.exercise import AbstractExerciseRepository
 from hjudge.oj.endpoints.requests import SubmitRequest
 from hjudge.oj.endpoints.responses import (
     ExerciseResponse,
@@ -22,6 +23,36 @@ from hjudge.oj.models.judges.factory import JudgeFactory
 from hjudge.oj.models.submission import Verdict
 from hjudge.oj.services import exercise as exercise_services
 from hjudge.oj.services import submission as submission_services
+
+
+@get("/api/exercises/{exercise_id:str}")
+async def get_exercise_by_id(
+    exercise_id: str,
+    uow_factory: AbstractUOWFactory,
+    judge_factory: JudgeFactory,
+) -> litestar.Response:
+    try:
+        with uow_factory.create_uow() as uow:
+            repo: AbstractExerciseRepository = uow.create_repository(
+                AbstractExerciseRepository
+            )  # pyright: ignore
+            entity = repo.get_exercise(UUID(exercise_id))
+
+            if entity is None:
+                uow.rollback()
+                response = ErrorResponse(ExerciseNotFoundError())
+            else:
+                exercise = entity.as_model()
+                uow.rollback()
+                response = ExerciseResponse(
+                    exercise=exercise,
+                    url=judge_factory.create_from(exercise.judge).get_exercise_url(
+                        exercise.code
+                    ),
+                )
+    except AbstractError as e:
+        response = ErrorResponse(e)
+    return get_litestar_response(response)
 
 
 @get("/api/exercises")
@@ -89,6 +120,7 @@ async def get_submissions_from_user_and_exercise(
 
 
 all_endpoints = [
+    get_exercise_by_id,
     check_exercise_existence,
     submit,
     get_submissions_from_user_and_exercise,

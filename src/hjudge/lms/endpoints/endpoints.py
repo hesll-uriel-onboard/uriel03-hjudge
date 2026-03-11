@@ -1,11 +1,27 @@
-from hjudge.lms.endpoints.backend import user as backend
-from hjudge.lms.endpoints.frontend import user as frontend
+from hjudge.lms.endpoints.backend import course as backend_course
+from hjudge.lms.endpoints.backend import user as backend_user
+from hjudge.lms.endpoints.frontend import course as frontend_course
+from hjudge.lms.endpoints.frontend import user as frontend_user
 
 lms_endpoints = [
-    backend.login,
-    backend.logout,
-    backend.register,
-    frontend.home,
-    frontend.register,
-    frontend.login
+    backend_user.login,
+    backend_user.logout,
+    backend_user.register,
+    backend_course.create_course,
+    backend_course.list_courses,
+    backend_course.get_course,
+    backend_course.update_course,
+    backend_course.create_lesson,
+    backend_course.list_lessons,
+    backend_course.get_lesson,
+    backend_course.add_admin,
+    backend_course.remove_admin,
+    frontend_user.home,
+    frontend_user.register,
+    frontend_user.login,
+    frontend_course.courses_page,
+    frontend_course.new_course_page,
+    frontend_course.course_detail_page,
+    frontend_course.new_lesson_page,
+    frontend_course.lesson_detail_page,
 ]

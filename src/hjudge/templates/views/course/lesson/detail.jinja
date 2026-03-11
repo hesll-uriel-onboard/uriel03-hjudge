@@ -1,0 +1,194 @@
+{% extends "base.jinja" %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <!-- Breadcrumb -->
+    <nav class="mb-6">
+        <a href="/courses/{{ course.slug }}" class="text-indigo-600 hover:text-indigo-700">{{ course.title }}</a>
+        <span class="mx-2 text-gray-400">/</span>
+        <span class="text-gray-600">Lesson {{ lesson.order }}: {{ lesson.title }}</span>
+    </nav>
+
+    <!-- Lesson Content -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-6">{{ lesson.title }}</h1>
+        <div class="prose max-w-none text-gray-700">
+            {{ lesson.content }}
+        </div>
+    </div>
+
+    <!-- Exercises -->
+    <div id="exercisesSection" class="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hidden">
+        <div class="p-6 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-900">Exercises</h2>
+        </div>
+        <table class="w-full">
+            <thead class="bg-gray-50 border-b border-gray-200">
+                <tr>
+                    <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Judge</th>
+                    <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Code</th>
+                    <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Title</th>
+                    <th class="px-6 py-4 text-center text-sm font-semibold text-gray-700">Solved</th>
+                </tr>
+            </thead>
+            <tbody id="exercisesList" class="divide-y divide-gray-200">
+                <!-- Exercises will be loaded here -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Navigation -->
+    <div class="mt-8 flex justify-between">
+        {% if prev_lesson %}
+        <a href="/courses/{{ course.slug }}/lessons/{{ prev_lesson.slug }}" class="text-indigo-600 hover:text-indigo-700">
+            ← Previous: {{ prev_lesson.title }}
+        </a>
+        {% else %}
+        <div></div>
+        {% endif %}
+
+        {% if next_lesson %}
+        <a href="/courses/{{ course.slug }}/lessons/{{ next_lesson.slug }}" class="text-indigo-600 hover:text-indigo-700">
+            Next: {{ next_lesson.title }} →
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    const exerciseIds = [
+        {% for id in lesson.exercise_ids %}
+            "{{ id }}",
+        {% endfor %}
+    ];
+
+    async function loadExercises() {
+        if (!exerciseIds || exerciseIds.length === 0) return;
+
+        const section = document.getElementById("exercisesSection");
+        const list = document.getElementById("exercisesList");
+
+        for (const exerciseId of exerciseIds) {
+            try {
+                const response = await fetch(`/api/exercises/${exerciseId}`);
+                if (response.ok) {
+                    const exercise = await response.json();
+
+                    const tr = document.createElement("tr");
+                    tr.className = "hover:bg-gray-50 transition-colors";
+                    tr.dataset.exerciseId = exercise.id;
+                    tr.innerHTML = `
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                                ${exercise.judge === 'CODEFORCES' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}
+                            ">
+                                ${exercise.judge}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-gray-600 font-mono">${exercise.code}</td>
+                        <td class="px-6 py-4">
+                            <a href="${exercise.url}" target="_blank"
+                                class="text-indigo-600 hover:text-indigo-700 font-medium hover:underline">
+                                ${exercise.title || exercise.code}
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            {% if (user is defined) and not(user == none) %}
+                            <input type="checkbox"
+                                class="solved-checkbox w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer"
+                                data-exercise-id="${exercise.id}">
+                            {% else %}
+                            <span class="text-gray-400">-</span>
+                            {% endif %}
+                        </td>
+                    `;
+                    list.appendChild(tr);
+                }
+            } catch (error) {
+                console.error(`Failed to load exercise ${exerciseId}`, error);
+            }
+        }
+
+        if (list.children.length > 0) {
+            section.classList.remove("hidden");
+            {% if (user is defined) and not(user == none) %}
+            initCheckboxes();
+            {% endif %}
+        }
+    }
+
+    {% if (user is defined) and not(user == none) %}
+    const USER_ID = "{{ user.id }}";
+
+    async function checkSolvedStatus() {
+        const checkboxes = document.querySelectorAll('.solved-checkbox');
+        const exerciseIds = Array.from(checkboxes).map(cb => cb.dataset.exerciseId);
+
+        const promises = exerciseIds.map(async exerciseId => {
+            try {
+                const response = await fetch(`/api/submissions?user=${USER_ID}&exercise=${exerciseId}`);
+                if (response.ok) {
+                    const submissions = await response.json();
+                    return { exerciseId, submissions };
+                }
+            } catch (error) {
+                console.error(`Failed to check status for exercise ${exerciseId}:`, error);
+            }
+            return { exerciseId, submissions: [] };
+        });
+
+        const results = await Promise.all(promises);
+
+        results.forEach(({ exerciseId, submissions }) => {
+            const checkbox = document.querySelector(`.solved-checkbox[data-exercise-id="${exerciseId}"]`);
+            if (checkbox && submissions.some(s => s.verdict === "AC")) {
+                checkbox.checked = true;
+                checkbox.classList.add('bg-green-500', 'border-green-500');
+            }
+        });
+    }
+
+    async function handleCheckboxChange(event) {
+        const checkbox = event.target;
+        const exerciseId = checkbox.dataset.exerciseId;
+        const verdict = checkbox.checked ? "AC" : "WA";
+
+        checkbox.disabled = true;
+
+        try {
+            const response = await fetch('/api/submissions/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: USER_ID,
+                    exercise_id: exerciseId,
+                    verdict: verdict
+                })
+            });
+
+            if (response.ok) {
+                checkbox.classList.toggle('bg-green-500', checkbox.checked);
+                checkbox.classList.toggle('border-green-500', checkbox.checked);
+            } else {
+                checkbox.checked = !checkbox.checked;
+                console.error('Failed to update:', await response.json());
+            }
+        } catch (error) {
+            checkbox.checked = !checkbox.checked;
+            console.error('Failed to update submission:', error);
+        } finally {
+            checkbox.disabled = false;
+        }
+    }
+
+    function initCheckboxes() {
+        document.querySelectorAll('.solved-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', handleCheckboxChange);
+        });
+        checkSolvedStatus();
+    }
+    {% endif %}
+
+    loadExercises();
+</script>
+{% endblock %}

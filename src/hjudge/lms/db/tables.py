@@ -19,3 +19,40 @@ user_session_table = sa.Table(
     sa.Column("issued_at", sa.DateTime, nullable=False),
     sa.Column("active", sa.Boolean, nullable=False, default=True),
 )
+
+course_table = sa.Table(
+    "Course",
+    mapper_registry.metadata,
+    sa.Column("id", sa.Uuid, primary_key=True),
+    sa.Column("title", sa.String, nullable=False),
+    sa.Column("content", sa.String, nullable=False),
+    sa.Column("slug", sa.String, nullable=False, unique=True),
+)
+lesson_table = sa.Table(
+    "Lesson",
+    mapper_registry.metadata,
+    sa.Column("id", sa.Uuid, primary_key=True),
+    sa.Column("title", sa.String, nullable=False),
+    sa.Column("content", sa.String, nullable=False),
+    sa.Column("slug", sa.String, nullable=False),
+    sa.Column(
+        "course_id",
+        sa.Uuid,
+        sa.ForeignKey("Course.id", name="fk_lesson_course_id"),
+    ),
+    sa.Column("order", sa.Integer, nullable=False),
+    sa.Column("exercise_ids", sa.JSON),
+    sa.UniqueConstraint("course_id", "slug"),
+)
+course_admin_table = sa.Table(
+    "CourseAdmin",
+    mapper_registry.metadata,
+    sa.Column("id", sa.Uuid, primary_key=True),
+    sa.Column(
+        "course_id",
+        sa.Uuid,
+        sa.ForeignKey("Course.id", name="fk_admin_course_id"),
+    ),
+    sa.Column("user_id", sa.Uuid, sa.ForeignKey("User.id", name="fk_admin_user_id")),
+    sa.UniqueConstraint("course_id", "user_id"),
+)

@@ -1,0 +1,50 @@
+{% extends "base.jinja" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <!-- Course Header -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-8">
+        <div class="flex justify-between items-start">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 mb-4">{{ course.title }}</h1>
+                <p class="text-gray-600">{{ course.content }}</p>
+            </div>
+            {% if is_admin %}
+            <div class="flex space-x-2">
+                <a href="/courses/{{ course.slug }}/lessons/new" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    Add Lesson
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Lessons List -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div class="p-6 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-900">Lessons</h2>
+        </div>
+
+        {% if lessons %}
+        <div class="divide-y divide-gray-200">
+            {% for lesson in lessons %}
+            <a href="/courses/{{ course.slug }}/lessons/{{ lesson.slug }}" class="block p-6 hover:bg-gray-50 transition-colors">
+                <div class="flex items-center">
+                    <span class="flex-shrink-0 w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-sm font-medium mr-4">
+                        {{ lesson.order }}
+                    </span>
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900">{{ lesson.title }}</h3>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="p-12 text-center">
+            <p class="text-gray-500">No lessons yet.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
