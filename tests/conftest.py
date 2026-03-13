@@ -51,7 +51,7 @@ def run_migrations() -> None:
     config.set_main_option("sqlalchemy.url", SQLITE_CONNECTION_STRING)
 
     script = ScriptDirectory.from_config(config)
-    context = EnvironmentContext(config=config, script=script, fn=my_function)
+    context = EnvironmentContext(config=config, script=script, fn=my_function, render_as_batch=True)
     with DEFAULT_ENGINE.connect() as connection:
         context.configure(connection=connection)
         with context.begin_transaction():

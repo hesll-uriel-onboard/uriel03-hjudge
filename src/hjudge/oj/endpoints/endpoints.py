@@ -2,7 +2,7 @@ from typing import Any
 from uuid import UUID
 
 import litestar
-from litestar import get, post
+from litestar import Request, get, patch, post
 
 from hjudge.commons.db.uow import AbstractUnitOfWork, AbstractUOWFactory
 from hjudge.commons.endpoints.responses import (
@@ -10,12 +10,16 @@ from hjudge.commons.endpoints.responses import (
     get_litestar_response,
 )
 from hjudge.commons.errors import AbstractError
+from hjudge.lms.endpoints.authentication import authenticate_user
+from hjudge.lms.endpoints.responses.user import COOKIE_KEY
+from hjudge.lms.errors import NotAuthorizedError
 from hjudge.oj.db.repositories.exercise import AbstractExerciseRepository
-from hjudge.oj.endpoints.requests import SubmitRequest
+from hjudge.oj.endpoints.requests import SubmitRequest, UpdateUserJudgesRequest
 from hjudge.oj.endpoints.responses import (
     ExerciseResponse,
     SubmissionsResponse,
     SubmitResponse,
+    UserJudgesResponse,
 )
 from hjudge.oj.errors import ExerciseNotFoundError, JudgeNotExistedError
 from hjudge.oj.models.judges import JudgeEnum
@@ -23,6 +27,7 @@ from hjudge.oj.models.judges.factory import JudgeFactory
 from hjudge.oj.models.submission import Verdict
 from hjudge.oj.services import exercise as exercise_services
 from hjudge.oj.services import submission as submission_services
+from hjudge.oj.services import user_judge as user_judge_services
 
 
 @get("/api/exercises/{exercise_id:str}")
@@ -83,11 +88,12 @@ async def check_exercise_existence(
     return get_litestar_response(response)
 
 
-@post("/api/submissions/")
+@post("/api/submissions/", deprecated=True)
 async def submit(
     data: SubmitRequest,
     uow_factory: AbstractUOWFactory,  # judge: JudgeEnum, code: str
 ) -> litestar.Response:
+    """Deprecated: Use the crawler to fetch submissions instead."""
     try:
         result = submission_services.submit(
             data.user_id,
@@ -119,9 +125,42 @@ async def get_submissions_from_user_and_exercise(
     return get_litestar_response(response)
 
 
+@get("/api/users/judges")
+async def get_user_judges(
+    request: Request,
+    uow_factory: AbstractUOWFactory,
+) -> litestar.Response:
+    """Get all judge handles for the authenticated user."""
+    cookie = request.cookies.get(COOKIE_KEY)
+    user = authenticate_user(cookie, uow_factory.create_uow(), required=True)
+    if user is None:
+        return get_litestar_response(ErrorResponse(NotAuthorizedError()))
+    result = user_judge_services.get_user_judges(user.id, uow_factory.create_uow())
+    return get_litestar_response(UserJudgesResponse(result))
+
+
+@patch("/api/users/judges")
+async def update_user_judges(
+    request: Request,
+    data: UpdateUserJudgesRequest,
+    uow_factory: AbstractUOWFactory,
+) -> litestar.Response:
+    """Update the authenticated user's judge handles."""
+    cookie = request.cookies.get(COOKIE_KEY)
+    user = authenticate_user(cookie, uow_factory.create_uow(), required=True)
+    if user is None:
+        return get_litestar_response(ErrorResponse(NotAuthorizedError()))
+    judges = [(pair.judge, pair.handle) for pair in data.judges]
+    result = user_judge_services.update_user_judges(
+        user.id, judges, uow_factory.create_uow()
+    )
+    return get_litestar_response(UserJudgesResponse(result))
+
+
 all_endpoints = [
     get_exercise_by_id,
     check_exercise_existence,
-    submit,
     get_submissions_from_user_and_exercise,
+    get_user_judges,
+    update_user_judges,
 ]

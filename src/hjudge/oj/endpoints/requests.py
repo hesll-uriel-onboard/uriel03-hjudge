@@ -14,3 +14,12 @@ class SubmitRequest(BaseModel):
     user_id: UUID
     exercise_id: UUID
     verdict: str
+
+
+class JudgeHandlePair(BaseModel):
+    judge: JudgeEnum
+    handle: str
+
+
+class UpdateUserJudgesRequest(BaseModel):
+    judges: list[JudgeHandlePair]

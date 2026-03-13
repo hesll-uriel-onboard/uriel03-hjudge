@@ -29,6 +29,10 @@ from hjudge.oj.db.repositories.submission import (
     AbstractSubmissionRepository,
     SQLAlchemySubmissionRepository,
 )
+from hjudge.oj.db.repositories.user_judge import (
+    AbstractUserJudgeRepository,
+    SQLAlchemyUserJudgeRepository,
+)
 
 
 class AbstractUnitOfWork(abc.ABC):
@@ -67,6 +71,7 @@ DEFAULT_SQLALCHEMY_REPOSITORY_DICT: SQLAlchemyRepositoryDict = {
     AbstractCourseRepository: SQLAlchemyCourseRepository,
     AbstractLessonRepository: SQLAlchemyLessonRepository,
     AbstractCourseAdminRepository: SQLAlchemyCourseAdminRepository,
+    AbstractUserJudgeRepository: SQLAlchemyUserJudgeRepository,
 }
 
 

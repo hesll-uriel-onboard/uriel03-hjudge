@@ -91,13 +91,14 @@ def test_submission(app: Litestar, uow: AbstractUnitOfWork):
         submission_repo: AbstractSubmissionRepository = uow.create_repository(
             AbstractSubmissionRepository
         )  # pyright: ignore
-        for exercise, user_id, verdict in submissions:
+        for idx, (exercise, user_id, verdict) in enumerate(submissions):
             submission_repo.add_submission(
                 SubmissionEntity.from_model(
                     Submission(
                         exercise=exercise,
                         user_id=user_id,
                         verdict=Verdict[verdict],
+                        submission_id=f"sub_{idx}",
                     )
                 )
             )

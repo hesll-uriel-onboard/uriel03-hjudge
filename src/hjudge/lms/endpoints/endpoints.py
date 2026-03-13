@@ -20,6 +20,7 @@ lms_endpoints = [
     frontend_user.home,
     frontend_user.register,
     frontend_user.login,
+    frontend_user.profile,
     frontend_course.courses_page,
     frontend_course.new_course_page,
     frontend_course.edit_course_page,

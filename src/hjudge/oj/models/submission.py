@@ -2,10 +2,9 @@ from datetime import datetime
 from enum import Enum
 
 from pydantic import UUID4, Field
-from typing_extensions import deprecated
 
 from hjudge.commons.models import Base
-from hjudge.oj.models.judges import Exercise, JudgeEnum
+from hjudge.oj.models.judges import Exercise
 
 
 class Verdict(Enum):
@@ -15,15 +14,10 @@ class Verdict(Enum):
     RTE = "RTE"
 
 
-@deprecated("Will be use eventually")
-class UserJudge(Base):
-    user_id: UUID4
-    judge: JudgeEnum
-    handle: str
-
-
 class Submission(Base):
     exercise: Exercise
     user_id: UUID4
     verdict: Verdict
+    submission_id: str
     submitted_at: datetime = Field(default_factory=lambda: datetime.now())
+    content: str = ""

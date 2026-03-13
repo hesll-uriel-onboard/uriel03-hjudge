@@ -1,5 +1,5 @@
 from typing import List
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from hjudge.commons.db.uow import AbstractUnitOfWork
 from hjudge.oj.db.entities.submission import SubmissionEntity
@@ -26,7 +26,10 @@ def submit(
             raise ExerciseNotFoundError
 
         submission = Submission(
-            exercise=entity.as_model(), user_id=user_id, verdict=verdict
+            exercise=entity.as_model(),
+            user_id=user_id,
+            verdict=verdict,
+            submission_id=f"invalid_{uuid4()}",
         )
         submission_repo.add_submission(SubmissionEntity.from_model(submission))
         uow.commit()

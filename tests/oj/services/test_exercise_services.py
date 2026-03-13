@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any, List
 from uuid import UUID
 
@@ -13,8 +14,10 @@ from hjudge.oj.models.judges import (
     DefaultCrawler,
     Exercise,
     JudgeEnum,
+    UserJudge,
 )
 from hjudge.oj.models.judges.factory import DEFAULT_JUDGE_FACTORY
+from hjudge.oj.models.submission import Submission
 from hjudge.oj.services import exercise as services
 
 exercises_list = [
@@ -35,6 +38,16 @@ class FakeJudge(AbstractJudge):
     @override
     def crawl_exercises_batch(self, url: str, **kwargs) -> List[Exercise]:
         return exercises_list
+
+    @override
+    def get_submission_url(self, submission_id: str, **kwargs) -> str:
+        return f"https://example.com/submission/{submission_id}"
+
+    @override
+    def crawl_user_submissions(
+        self, user_judge: UserJudge, from_timestamp: datetime
+    ) -> list[Submission]:
+        return []
 
 
 class FakeRepo(AbstractExerciseRepository):
