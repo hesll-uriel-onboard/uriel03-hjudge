@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from hjudge.oj.models.judges import JudgeEnum
+from hjudge.oj.models.judges import AbstractCrawler, JudgeEnum
 from hjudge.oj.models.judges.codeforces import CodeforcesJudge
 from hjudge.oj.models.submission import Verdict
 from hjudge.oj.models.user_judge import UserJudge
@@ -13,7 +13,7 @@ from hjudge.oj.models.user_judge import UserJudge
 USER_ID = uuid.uuid4()
 
 
-class MockCrawler:
+class MockCrawler(AbstractCrawler):
     """Mock crawler for testing"""
 
     def __init__(self, response_data: dict):
@@ -33,9 +33,10 @@ def make_cf_submission(
     verdict: str,
     timestamp: int,
     handle: str = "testuser",
+    points: int | None = None,
 ):
     """Helper to create a Codeforces API submission object"""
-    return {
+    result = {
         "id": submission_id,
         "contestId": contest_id,
         "problem": {
@@ -47,6 +48,9 @@ def make_cf_submission(
         "verdict": verdict,
         "creationTimeSeconds": timestamp,
     }
+    if points is not None:
+        result["points"] = points
+    return result
 
 
 def make_user_judge(handle: str = "testuser") -> UserJudge:
@@ -67,6 +71,7 @@ def test_crawl_user_submissions():
             problem_index="A",
             verdict="OK",
             timestamp=1738000000,  # 2025-01-27
+            points=100,
         ),
         make_cf_submission(
             submission_id=101,
@@ -74,6 +79,7 @@ def test_crawl_user_submissions():
             problem_index="B",
             verdict="WRONG_ANSWER",
             timestamp=1738001000,
+            points=0,
         ),
         make_cf_submission(
             submission_id=102,
@@ -81,6 +87,7 @@ def test_crawl_user_submissions():
             problem_index="A",
             verdict="TIME_LIMIT_EXCEEDED",
             timestamp=1738002000,
+            points=0,
         ),
     ]
 
@@ -105,14 +112,17 @@ def test_crawl_user_submissions():
     assert submissions[0].exercise.code == "1234A"
     assert submissions[0].verdict == Verdict.AC
     assert submissions[0].user_id == USER_ID
+    assert submissions[0].points == 100
 
     # Check second submission
     assert submissions[1].submission_id == "101"
     assert submissions[1].exercise.code == "1234B"
     assert submissions[1].verdict == Verdict.WA
+    assert submissions[1].points == 0
 
     # Check third submission
     assert submissions[2].verdict == Verdict.TLE
+    assert submissions[2].points == 0
 
 
 def test_crawl_user_submissions_with_timestamp_filter():
@@ -124,6 +134,7 @@ def test_crawl_user_submissions_with_timestamp_filter():
             problem_index="A",
             verdict="OK",
             timestamp=1738000000,  # 2025-01-27
+            points=100,
         ),
         make_cf_submission(
             submission_id=101,
@@ -131,6 +142,7 @@ def test_crawl_user_submissions_with_timestamp_filter():
             problem_index="B",
             verdict="OK",
             timestamp=1739000000,  # Later submission
+            points=100,
         ),
     ]
 
@@ -212,3 +224,106 @@ def test_get_submission_url():
     assert "codeforces.com" in url
     assert "1234" in url
     assert "123456789" in url
+
+
+def test_crawl_user_submissions_extracts_points():
+    """Test that points are extracted from Codeforces API response"""
+    import json
+
+    submissions_data = [
+        make_cf_submission(
+            submission_id=100,
+            contest_id=1234,
+            problem_index="A",
+            verdict="OK",
+            timestamp=1738000000,
+            points=100,
+        ),
+        make_cf_submission(
+            submission_id=101,
+            contest_id=1234,
+            problem_index="B",
+            verdict="WRONG_ANSWER",
+            timestamp=1738001000,
+            points=50,
+        ),
+    ]
+
+    response_content = json.dumps({"status": "OK", "result": submissions_data})
+    mock_crawler = MockCrawler({"content": response_content})
+
+    judge = CodeforcesJudge(mock_crawler)
+    user_judge = make_user_judge()
+
+    # act
+    from_timestamp = datetime.fromtimestamp(0, tz=timezone.utc)
+    submissions = judge.crawl_user_submissions(user_judge, from_timestamp)
+
+    # assert
+    assert len(submissions) == 2
+    assert submissions[0].points == 100
+    assert submissions[1].points == 50
+
+
+def test_crawl_user_submissions_default_points_for_ac():
+    """Test that AC submissions without points default to 100"""
+    import json
+
+    # AC submission without points field - should default to 100
+    submissions_data = [
+        make_cf_submission(
+            submission_id=100,
+            contest_id=1234,
+            problem_index="A",
+            verdict="OK",
+            timestamp=1738000000,
+            # No points field
+        ),
+    ]
+
+    response_content = json.dumps({"status": "OK", "result": submissions_data})
+    mock_crawler = MockCrawler({"content": response_content})
+
+    judge = CodeforcesJudge(mock_crawler)
+    user_judge = make_user_judge()
+
+    # act
+    from_timestamp = datetime.fromtimestamp(0, tz=timezone.utc)
+    submissions = judge.crawl_user_submissions(user_judge, from_timestamp)
+
+    # assert - AC without points should default to 100
+    assert len(submissions) == 1
+    assert submissions[0].verdict == Verdict.AC
+    assert submissions[0].points == 100
+
+
+def test_crawl_user_submissions_zero_points_for_non_ac():
+    """Test that non-AC submissions without points default to 0"""
+    import json
+
+    # WA submission without points field - should default to 0
+    submissions_data = [
+        make_cf_submission(
+            submission_id=100,
+            contest_id=1234,
+            problem_index="A",
+            verdict="WRONG_ANSWER",
+            timestamp=1738000000,
+            # No points field
+        ),
+    ]
+
+    response_content = json.dumps({"status": "OK", "result": submissions_data})
+    mock_crawler = MockCrawler({"content": response_content})
+
+    judge = CodeforcesJudge(mock_crawler)
+    user_judge = make_user_judge()
+
+    # act
+    from_timestamp = datetime.fromtimestamp(0, tz=timezone.utc)
+    submissions = judge.crawl_user_submissions(user_judge, from_timestamp)
+
+    # assert - non-AC without points should default to 0
+    assert len(submissions) == 1
+    assert submissions[0].verdict == Verdict.WA
+    assert submissions[0].points == 0

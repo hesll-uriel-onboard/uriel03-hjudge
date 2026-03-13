@@ -1,0 +1,96 @@
+<!-- Submission History Modal Component -->
+<div id="submissionModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-lg max-w-lg w-full mx-4 max-h-[80vh] overflow-hidden">
+        <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-gray-900">Submission History</h3>
+            <button onclick="closeSubmissionModal()" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div id="modalContent" class="p-6 overflow-y-auto max-h-[60vh]">
+            <!-- Submission history will be loaded here -->
+        </div>
+    </div>
+</div>
+
+<script>
+// Store submissions data for each exercise
+const exerciseSubmissions = {};
+
+function showSubmissionHistory(exerciseId) {
+    const submissions = exerciseSubmissions[exerciseId] || [];
+    const modal = document.getElementById('submissionModal');
+    const content = document.getElementById('modalContent');
+
+    if (submissions.length === 0) {
+        content.innerHTML = '<p class="text-gray-500 text-center">No submissions yet</p>';
+    } else {
+        const verdictColors = {
+            'AC': 'bg-green-100 text-green-700',
+            'WA': 'bg-red-100 text-red-700',
+            'TLE': 'bg-yellow-100 text-yellow-700',
+            'RTE': 'bg-orange-100 text-orange-700'
+        };
+
+        content.innerHTML = `
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">ID</th>
+                        <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">Date</th>
+                        <th class="px-4 py-2 text-center text-sm font-semibold text-gray-700">Verdict</th>
+                        <th class="px-4 py-2 text-center text-sm font-semibold text-gray-700">Points</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    ${submissions.map(s => `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-3 text-sm">
+                                <a href="${s.url}" target="_blank" class="text-indigo-600 hover:text-indigo-700 font-mono">
+                                    ${s.submission_id}
+                                </a>
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-600">
+                                ${new Date(s.submitted_at).toLocaleDateString()}
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium ${verdictColors[s.verdict] || 'bg-gray-100 text-gray-700'}">
+                                    ${s.verdict}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-center text-sm font-bold ${s.points > 0 ? 'text-green-600' : 'text-red-600'}">
+                                ${s.points || 0}
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeSubmissionModal() {
+    const modal = document.getElementById('submissionModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+// Close modal on outside click
+document.getElementById('submissionModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeSubmissionModal();
+    }
+});
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeSubmissionModal();
+    }
+});
+</script>

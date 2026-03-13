@@ -21,3 +21,4 @@ class Submission(Base):
     submission_id: str
     submitted_at: datetime = Field(default_factory=lambda: datetime.now())
     content: str = ""
+    points: int = 0

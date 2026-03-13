@@ -19,6 +19,7 @@ class SubmissionEntity(BaseEntity):
     submission_id: Mapped[str]
     submitted_at: Mapped[datetime]
     content: Mapped[str] = mapped_column(default="")
+    points: Mapped[int] = mapped_column(default=0)
 
     @override
     def as_model(self, **kwargs) -> Submission:
@@ -30,4 +31,5 @@ class SubmissionEntity(BaseEntity):
             submission_id=self.submission_id,
             submitted_at=self.submitted_at,
             content=self.content,
+            points=self.points,
         )

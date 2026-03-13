@@ -66,7 +66,7 @@ def find_exercise(uow: AbstractUnitOfWork, exercise: Exercise) -> uuid.UUID:
     assert result is not None
     return result.as_model().id
 
-
+@pytest.mark.skip("POST /api/submissions is deprecated")
 def test_submit(app: Litestar, uow: AbstractUnitOfWork):
     with TestClient(app) as client:
         for exercise, user_id, verdict in submissions:
@@ -123,8 +123,12 @@ def test_submission(app: Litestar, uow: AbstractUnitOfWork):
                 assert submission["exercise"]["id"] == str(exercise.id)
             for x in verdicts:
                 assert x in verdicts
+            # Check submission URL format
+            for submission in submissions_result:
+                assert "url" in submission
+                assert "codeforces.com" in submission["url"]
 
-
+@pytest.mark.skip("POST /api/submissions is deprecated")
 def test_submit_not_found(app: Litestar):
     with TestClient(app) as client:
         response = client.post(

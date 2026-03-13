@@ -80,6 +80,7 @@ def crawl_all_users(uow: AbstractUnitOfWork, judge_factory: JudgeFactory) -> Non
                     submission_id=submission.submission_id,
                     submitted_at=submission.submitted_at,
                     content=submission.content,
+                    points=submission.points,
                 )
                 entities.append(submission_entity)
 

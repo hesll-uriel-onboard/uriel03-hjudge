@@ -111,6 +111,7 @@ async def submit(
 async def get_submissions_from_user_and_exercise(
     query: dict[str, str],
     uow_factory: AbstractUOWFactory,  # judge: JudgeEnum, code: str
+    judge_factory: JudgeFactory,
 ) -> litestar.Response:
     print("okeokeoke")
     user_id = UUID(query["user"])
@@ -119,7 +120,7 @@ async def get_submissions_from_user_and_exercise(
         result = submission_services.get_submissions(
             user_id, exercise_id, uow_factory.create_uow()
         )
-        response = SubmissionsResponse(result)
+        response = SubmissionsResponse(result, judge_factory)
     except AbstractError as e:
         response = ErrorResponse(e)
     return get_litestar_response(response)

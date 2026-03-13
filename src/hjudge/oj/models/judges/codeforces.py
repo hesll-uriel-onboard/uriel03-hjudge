@@ -163,6 +163,11 @@ class CodeforcesJudge(AbstractJudge):
                 if verdict is None:
                     continue  # Skip submissions without a valid verdict
 
+                # Get points - default to 100 for AC, 0 otherwise
+                points = sub_data.get("points")
+                if points is None:
+                    points = 100 if verdict == Verdict.AC else 0
+
                 # Get problem info
                 problem = sub_data.get("problem", {})
                 contest_id = problem.get("contestId")
@@ -189,6 +194,7 @@ class CodeforcesJudge(AbstractJudge):
                     submission_id=str(sub_data.get("id", "")),
                     submitted_at=submitted_at,
                     content="",  # Codeforces API doesn't provide code in this endpoint
+                    points=points,
                 )
                 submissions.append(submission)
 

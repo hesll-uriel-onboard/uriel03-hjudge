@@ -35,7 +35,7 @@
                     <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Judge</th>
                     <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Code</th>
                     <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Title</th>
-                    <th class="px-6 py-4 text-center text-sm font-semibold text-gray-700">Solved</th>
+                    <th class="px-6 py-4 text-center text-sm font-semibold text-gray-700">Result</th>
                 </tr>
             </thead>
             <tbody id="exercisesList" class="divide-y divide-gray-200">
@@ -44,8 +44,11 @@
         </table>
     </div>
 
-    <!-- Navigation -->
-    <div class="mt-8 flex justify-between">
+<!-- Submission History Modal Component -->
+{% include "components/submission_modal.jinja" %}
+
+<!-- Navigation -->
+<div class="mt-8 flex justify-between">
         {% if prev_lesson %}
         <a href="/courses/{{ course.slug }}/lessons/{{ prev_lesson.slug }}" class="text-indigo-600 hover:text-indigo-700">
             ← Previous: {{ prev_lesson.title }}
@@ -101,9 +104,10 @@
                         </td>
                         <td class="px-6 py-4 text-center">
                             {% if (user is defined) and not(user == none) %}
-                            <input type="checkbox"
-                                class="solved-checkbox w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer"
+                            <span class="result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer"
                                 data-exercise-id="${exercise.id}">
+                                -
+                            </span>
                             {% else %}
                             <span class="text-gray-400">-</span>
                             {% endif %}
@@ -119,7 +123,7 @@
         if (list.children.length > 0) {
             section.classList.remove("hidden");
             {% if (user is defined) and not(user == none) %}
-            initCheckboxes();
+            loadSubmissionResults();
             {% endif %}
         }
     }
@@ -127,9 +131,9 @@
     {% if (user is defined) and not(user == none) %}
     const USER_ID = "{{ user.id }}";
 
-    async function checkSolvedStatus() {
-        const checkboxes = document.querySelectorAll('.solved-checkbox');
-        const exerciseIds = Array.from(checkboxes).map(cb => cb.dataset.exerciseId);
+    async function loadSubmissionResults() {
+        const resultDisplays = document.querySelectorAll('.result-display');
+        const exerciseIds = Array.from(resultDisplays).map(el => el.dataset.exerciseId);
 
         const promises = exerciseIds.map(async exerciseId => {
             try {
@@ -139,7 +143,7 @@
                     return { exerciseId, submissions };
                 }
             } catch (error) {
-                console.error(`Failed to check status for exercise ${exerciseId}:`, error);
+                console.error(`Failed to load submissions for exercise ${exerciseId}:`, error);
             }
             return { exerciseId, submissions: [] };
         });
@@ -147,52 +151,35 @@
         const results = await Promise.all(promises);
 
         results.forEach(({ exerciseId, submissions }) => {
-            const checkbox = document.querySelector(`.solved-checkbox[data-exercise-id="${exerciseId}"]`);
-            if (checkbox && submissions.some(s => s.verdict === "AC")) {
-                checkbox.checked = true;
-                checkbox.classList.add('bg-green-500', 'border-green-500');
-            }
-        });
-    }
+            const display = document.querySelector(`.result-display[data-exercise-id="${exerciseId}"]`);
+            if (!display) return;
 
-    async function handleCheckboxChange(event) {
-        const checkbox = event.target;
-        const exerciseId = checkbox.dataset.exerciseId;
-        const verdict = checkbox.checked ? "AC" : "WA";
+            // Store submissions for modal
+            exerciseSubmissions[exerciseId] = submissions;
 
-        checkbox.disabled = true;
-
-        try {
-            const response = await fetch('/api/submissions/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    user_id: USER_ID,
-                    exercise_id: exerciseId,
-                    verdict: verdict
-                })
-            });
-
-            if (response.ok) {
-                checkbox.classList.toggle('bg-green-500', checkbox.checked);
-                checkbox.classList.toggle('border-green-500', checkbox.checked);
+            if (submissions.length === 0) {
+                display.textContent = "0";
+                display.className = "result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer bg-red-100 text-red-700";
             } else {
-                checkbox.checked = !checkbox.checked;
-                console.error('Failed to update:', await response.json());
-            }
-        } catch (error) {
-            checkbox.checked = !checkbox.checked;
-            console.error('Failed to update submission:', error);
-        } finally {
-            checkbox.disabled = false;
-        }
-    }
+                // Calculate max points
+                const maxPoints = Math.max(...submissions.map(s => s.points || 0));
+                const hasAC = submissions.some(s => s.verdict === "AC");
 
-    function initCheckboxes() {
-        document.querySelectorAll('.solved-checkbox').forEach(checkbox => {
-            checkbox.addEventListener('change', handleCheckboxChange);
+                display.textContent = maxPoints;
+
+                // Color coding
+                if (hasAC) {
+                    display.className = "result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer bg-green-100 text-green-700 hover:bg-green-200";
+                } else if (maxPoints > 0) {
+                    display.className = "result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer bg-yellow-100 text-yellow-700 hover:bg-yellow-200";
+                } else {
+                    display.className = "result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer bg-red-100 text-red-700 hover:bg-red-200";
+                }
+
+                // Add click handler for modal
+                display.addEventListener('click', () => showSubmissionHistory(exerciseId));
+            }
         });
-        checkSolvedStatus();
     }
     {% endif %}
 

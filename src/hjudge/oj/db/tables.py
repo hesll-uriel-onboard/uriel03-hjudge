@@ -27,6 +27,7 @@ submission_table = sa.Table(
     sa.Column("submitted_at", sa.DateTime, nullable=False),
     sa.Column("verdict", sa.Enum(Verdict), nullable=False),
     sa.Column("content", sa.String, nullable=False, server_default=""),
+    sa.Column("points", sa.Integer, nullable=False, server_default="0"),
 )
 user_judge_table = sa.Table(
     "UserJudge",

@@ -3,6 +3,7 @@ from typing import List, override
 from hjudge.commons.endpoints.responses import AbstractResponse
 from hjudge.commons.endpoints.status_codes import HTTP_200_OK
 from hjudge.oj.models.judges import Exercise
+from hjudge.oj.models.judges.factory import JudgeFactory
 from hjudge.oj.models.submission import Submission
 from hjudge.oj.models.user_judge import UserJudge
 
@@ -24,8 +25,18 @@ class SubmitResponse(AbstractResponse):
 
 class SubmissionsResponse(AbstractResponse):
     @override
-    def __init__(self, submissions: List[Submission]):
-        result = [submission.model_dump() for submission in submissions]
+    def __init__(
+        self, submissions: List[Submission], judge_factory: JudgeFactory
+    ):
+        result = []
+        for submission in submissions:
+            submission_dict = submission.model_dump()
+            judge = judge_factory.create_from(submission.exercise.judge)
+            submission_dict["url"] = judge.get_submission_url(
+                submission_id=submission.submission_id,
+                code=submission.exercise.code,
+            )
+            result.append(submission_dict)
         super().__init__(status_code=HTTP_200_OK, content=result)
 
 
