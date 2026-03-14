@@ -17,6 +17,5 @@ def entity_dumps(obj) -> dict[str, Any]:
         else:
             new_k = key
             new_v = getattr(obj, key)
-        print(new_k, new_v)
         result[new_k] = new_v
     return result

@@ -12,6 +12,11 @@ class UserLoginResponse(AbstractResponse):
         super().__init__(status_code=HTTP_200_OK, cookies={COOKIE_KEY: cookie})
 
 
+class UserLogoutResponse(AbstractResponse):
+    def __init__(self):
+        super().__init__(status_code=HTTP_200_OK, cookies={COOKIE_KEY: ""})
+
+
 class UserRegisterResponse(AbstractResponse):
     def __init__(self):
         super().__init__(status_code=HTTP_201_CREATED)

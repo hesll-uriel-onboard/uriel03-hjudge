@@ -27,7 +27,9 @@ def get_litestar_response(response: AbstractResponse):
         None
         if response.cookies is None
         else [
-            litestar.datastructures.Cookie(key=key, value=value)
+            litestar.datastructures.Cookie(
+                key=key, value=value, max_age=0 if value == "" else None
+            )
             for key, value in response.cookies.items()
         ]
     )

@@ -1,0 +1,253 @@
+{% extends "base.jinja" %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+        <h1 class="text-2xl font-bold text-gray-900 mb-6">Edit Lesson</h1>
+        <p class="text-gray-600 mb-6">Course: <span class="font-medium">{{ course.title }}</span></p>
+
+        <form id="lessonForm" class="space-y-6">
+            <div>
+                <label for="title" class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <input type="text" id="title" name="title" required
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                    value="{{ lesson.title }}">
+            </div>
+
+            <div>
+                <label for="slug" class="block text-sm font-medium text-gray-700 mb-1">Slug (URL)</label>
+                <input type="text" id="slug" name="slug" disabled
+                    class="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-500"
+                    value="{{ lesson.slug }}">
+                <p class="text-xs text-gray-500 mt-1">Slug cannot be changed after creation.</p>
+            </div>
+
+            <div>
+                <label for="content" class="block text-sm font-medium text-gray-700 mb-1">Content</label>
+                <textarea id="content" name="content" rows="6" required
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">{{ lesson.content }}</textarea>
+            </div>
+
+            <!-- Exercises Section -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Exercises</label>
+
+                <!-- Added exercises list -->
+                <div id="exerciseList" class="mb-4 space-y-2">
+                    <!-- Exercises will be added here -->
+                </div>
+
+                <!-- Add exercise section -->
+                <div class="flex items-end space-x-2">
+                    <div class="flex-1">
+                        <label for="judgeSelect" class="block text-xs text-gray-500 mb-1">Judge</label>
+                        <select id="judgeSelect"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="CODEFORCES">Codeforces</option>
+                        </select>
+                    </div>
+                    <div class="flex-1">
+                        <label for="problemCode" class="block text-xs text-gray-500 mb-1">Problem Code</label>
+                        <input type="text" id="problemCode"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                            placeholder="e.g., 122A">
+                    </div>
+                    <button type="button" id="addExerciseBtn"
+                        class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                        Add
+                    </button>
+                </div>
+                <div id="exerciseError" class="text-red-600 text-sm mt-2 hidden"></div>
+            </div>
+
+            <!-- Hidden input for exercise IDs -->
+            <input type="hidden" id="exercise_ids" name="exercise_ids">
+
+            <div id="errorMessage" class="hidden text-red-600 text-sm"></div>
+
+            <div class="flex justify-end space-x-3">
+                <a href="/courses/{{ course.slug }}/lessons/{{ lesson.slug }}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                    Cancel
+                </a>
+                <button type="submit" id="submitBtn"
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Store selected exercises - pre-populate with existing
+    let selectedExercises = [
+        {% for id in lesson.exercise_ids %}
+            { id: "{{ id }}", judge: "", code: "", title: "" },
+        {% endfor %}
+    ];
+
+    // Load existing exercise details
+    async function loadExistingExercises() {
+        for (let i = 0; i < selectedExercises.length; i++) {
+            const exercise = selectedExercises[i];
+            try {
+                const response = await fetch(`/api/exercises/${exercise.id}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    selectedExercises[i] = {
+                        id: data.id,
+                        judge: data.judge,
+                        code: data.code,
+                        title: data.title || data.code
+                    };
+                }
+            } catch (error) {
+                console.error(`Failed to load exercise ${exercise.id}`, error);
+            }
+        }
+        renderExerciseList();
+    }
+
+    // Add exercise button handler
+    document.getElementById("addExerciseBtn").addEventListener("click", async function() {
+        const judge = document.getElementById("judgeSelect").value;
+        const code = document.getElementById("problemCode").value.trim();
+
+        if (!code) {
+            showExerciseError("Please enter a problem code");
+            return;
+        }
+
+        // Check if already added
+        const exists = selectedExercises.some(e => e.judge === judge && e.code.toUpperCase() === code.toUpperCase());
+        if (exists) {
+            showExerciseError("Exercise already added");
+            return;
+        }
+
+        // Fetch exercise info
+        try {
+            const response = await fetch(`/api/exercises?judge=${judge}&code=${code}`);
+
+            if (response.ok) {
+                const data = await response.json();
+
+                // Add to list
+                selectedExercises.push({
+                    id: data.id,
+                    judge: judge,
+                    code: data.code,
+                    title: data.title || data.code
+                });
+
+                renderExerciseList();
+                document.getElementById("problemCode").value = "";
+                hideExerciseError();
+            } else {
+                showExerciseError("Problem does not exist");
+            }
+        } catch (error) {
+            showExerciseError("Failed to verify exercise");
+        }
+    });
+
+    // Enter key on problem code input
+    document.getElementById("problemCode").addEventListener("keypress", function(e) {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            document.getElementById("addExerciseBtn").click();
+        }
+    });
+
+    function renderExerciseList() {
+        const container = document.getElementById("exerciseList");
+        container.innerHTML = "";
+
+        selectedExercises.forEach((exercise, index) => {
+            const div = document.createElement("div");
+            div.className = "flex items-center justify-between bg-gray-50 px-4 py-2 rounded-lg";
+            div.innerHTML = `
+                <div class="flex items-center space-x-2">
+                    <span class="text-xs font-medium text-gray-500">${exercise.judge}</span>
+                    <span class="font-medium">${exercise.code}</span>
+                    ${exercise.title && exercise.title !== exercise.code ? `<span class="text-gray-500 text-sm">${exercise.title}</span>` : ''}
+                </div>
+                <button type="button" onclick="removeExercise(${index})" class="text-red-500 hover:text-red-700 text-sm">
+                    Remove
+                </button>
+            `;
+            container.appendChild(div);
+        });
+
+        // Update hidden input
+        document.getElementById("exercise_ids").value = JSON.stringify(selectedExercises.map(e => e.id));
+    }
+
+    function removeExercise(index) {
+        selectedExercises.splice(index, 1);
+        renderExerciseList();
+    }
+
+    function showExerciseError(msg) {
+        const el = document.getElementById("exerciseError");
+        el.textContent = msg;
+        el.classList.remove("hidden");
+    }
+
+    function hideExerciseError() {
+        document.getElementById("exerciseError").classList.add("hidden");
+    }
+
+    // Form submission
+    document.getElementById("lessonForm").addEventListener("submit", async function(e) {
+        e.preventDefault();
+
+        const title = document.getElementById("title").value.trim();
+        const content = document.getElementById("content").value.trim();
+        const exerciseIdsRaw = document.getElementById("exercise_ids").value;
+
+        if (!title || !content) {
+            showError("Please fill in all required fields");
+            return;
+        }
+
+        let exercise_ids = [];
+        if (exerciseIdsRaw) {
+            exercise_ids = JSON.parse(exerciseIdsRaw);
+        }
+
+        const btn = document.getElementById("submitBtn");
+        btn.disabled = true;
+        btn.textContent = "Saving...";
+
+        try {
+            const response = await fetch("/api/courses/{{ course.slug }}/lessons/{{ lesson.slug }}", {
+                method: "PATCH",
+                body: JSON.stringify({ title, content, exercise_ids }),
+                headers: { "Content-Type": "application/json; charset=UTF-8" }
+            });
+
+            if (response.ok) {
+                window.location.href = "/courses/{{ course.slug }}/lessons/{{ lesson.slug }}";
+            } else {
+                const data = await response.json();
+                showError(data.detail || "Failed to update lesson");
+            }
+        } catch (error) {
+            showError("An error occurred. Please try again.");
+        } finally {
+            btn.disabled = false;
+            btn.textContent = "Save Changes";
+        }
+    });
+
+    function showError(msg) {
+        const el = document.getElementById("errorMessage");
+        el.textContent = msg;
+        el.classList.remove("hidden");
+    }
+
+    // Load existing exercises on page load
+    loadExistingExercises();
+</script>
+{% endblock %}

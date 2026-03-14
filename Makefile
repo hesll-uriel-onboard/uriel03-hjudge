@@ -5,7 +5,7 @@ run:
 	uv run litestar --app hjudge.app:app run
 
 debug:
-	uv run litestar --app hjudge.app:app run
+	uv run litestar --app hjudge.app:app run --debug
 
 coverage:
 	uv run coverage run -m pytest
@@ -13,3 +13,6 @@ coverage:
 
 new-migrations:
 	uv run python migrations/new-version.py -m "${MSG}"
+
+migrate:
+	uv run alembic upgrade head

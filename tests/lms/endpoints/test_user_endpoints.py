@@ -45,7 +45,7 @@ def test_register(uow: AbstractUnitOfWork, app: Litestar, user: dict[str, str]):
     request = build_register_request(user)
     # act
     with TestClient(app=app) as client:
-        response = client.post(url="/register", content=request)
+        response = client.post(url="/api/register", content=request)
     # assert
     assert response.status_code == HTTP_201_CREATED
     assert response.content.decode() == ""
@@ -70,13 +70,13 @@ def test_login(app: Litestar, uow: AbstractUnitOfWork, user: dict[str, str]):
     # with
     with TestClient(app=app) as client:
         response = client.post(
-            url="/register", content=build_register_request(user)
+            url="/api/register", content=build_register_request(user)
         )
     # and
     request = build_login_request(user)
     # act
     with TestClient(app=app) as client:
-        response = client.post(url="/login", content=request)
+        response = client.post(url="/api/login", content=request)
         assert response.status_code == HTTP_200_OK
 
 
@@ -88,10 +88,10 @@ def test_register_duplicated(
     request = build_register_request(user)
     # and
     with TestClient(app=app) as client:
-        client.post("/register", content=request)
+        client.post("/api/register", content=request)
     # act
     with TestClient(app=app) as client:
-        response = client.post("/register", content=request)
+        response = client.post("/api/register", content=request)
     # assert
     assert response.status_code == 409
 
@@ -104,11 +104,11 @@ def test_login_wrong_password(
     request = build_register_request(user)
     # and
     with TestClient(app=app) as client:
-        client.post("/register", content=request)
+        client.post("/api/register", content=request)
     # act
     with TestClient(app=app) as client:
         response = client.post(
-            "/login",
+            "/api/login",
             content=build_login_request(
                 build_user(user["username"], "wrong_password", "")
             ),
@@ -126,11 +126,11 @@ def test_login_unknown_user(
     request = build_register_request(user)
     # and
     with TestClient(app=app) as client:
-        client.post("/register", content=request)
+        client.post("/api/register", content=request)
     # act
     with TestClient(app=app) as client:
         response = client.post(
-            "/login",
+            "/api/login",
             content=build_login_request(
                 build_user("whatever", "doesnotmatter", "")
             ),

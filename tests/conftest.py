@@ -17,9 +17,9 @@ from hjudge.app import provide_app
 from hjudge.commons.db.uow import (
     AbstractUnitOfWork,
     SQLAlchemyUnitOfWork,
+    SQLAlchemyUOWFactory,
 )
-
-# from migrations.env import run_migrations
+from hjudge.oj.models.judges.factory import DEFAULT_JUDGE_FACTORY
 
 CURRENT_DIRECTORY = pathlib.Path(__file__).parent
 NAME = ".db"
@@ -51,7 +51,7 @@ def run_migrations() -> None:
     config.set_main_option("sqlalchemy.url", SQLITE_CONNECTION_STRING)
 
     script = ScriptDirectory.from_config(config)
-    context = EnvironmentContext(config=config, script=script, fn=my_function)
+    context = EnvironmentContext(config=config, script=script, fn=my_function, render_as_batch=True)
     with DEFAULT_ENGINE.connect() as connection:
         context.configure(connection=connection)
         with context.begin_transaction():
@@ -73,7 +73,9 @@ def uow(engine: Engine) -> Generator[AbstractUnitOfWork, None, None]:
 
 
 @pytest.fixture(scope="session")
-def app(uow: AbstractUnitOfWork) -> Litestar:
-    app = provide_app(uow)
+def app(engine: Engine) -> Litestar:
+    app = provide_app(
+        SQLAlchemyUOWFactory(sessionmaker(bind=engine)), DEFAULT_JUDGE_FACTORY
+    )
     app.debug = True
     return app

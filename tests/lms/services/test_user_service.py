@@ -13,7 +13,7 @@ from hjudge.lms.errors import (
     UserNotFoundError,
     UserWrongPasswordError,
 )
-from hjudge.lms.services.user import login, register
+from hjudge.lms.services.user import login, logout, register
 
 USERNAME = "test"
 PASSWORD = "test"
@@ -57,3 +57,56 @@ def test_login_unknown_user(uow: AbstractUnitOfWork):
     # do
     with pytest.raises(UserNotFoundError):
         login("whatever", "whatever", uow)
+
+
+def test_logout_deactivates_session(uow: AbstractUnitOfWork, engine: sa.Engine):
+    """Test that logout deactivates the user session."""
+    # given: a registered user with an active session
+    user = register(USERNAME, PASSWORD, NAME, uow)
+    session = login(USERNAME, PASSWORD, uow)
+    cookie = session.cookie
+
+    # when: the user logs out
+    logout(cookie, uow)
+
+    # then: the session should be deactivated
+    with engine.connect() as connection:
+        result = connection.execute(
+            sa.select(user_session_table.c.active).where(
+                user_session_table.c.cookie == cookie
+            )
+        ).scalar_one()
+        assert result is False
+
+
+def test_logout_with_nonexistent_cookie_does_not_raise(
+    uow: AbstractUnitOfWork,
+):
+    """Test that logout with a non-existent cookie does not raise an error."""
+    # given: a non-existent cookie
+    fake_cookie = "non-existent-cookie"
+
+    # when/then: logout should not raise an error
+    logout(fake_cookie, uow)  # should not raise
+
+
+def test_logout_session_not_found_after_logout(
+    uow: AbstractUnitOfWork, engine: sa.Engine
+):
+    """Test that a deactivated session cannot be used to authenticate."""
+    # given: a registered user with an active session
+    register(USERNAME, PASSWORD, NAME, uow)
+    session = login(USERNAME, PASSWORD, uow)
+    cookie = session.cookie
+
+    # when: the user logs out
+    logout(cookie, uow)
+
+    # then: get_user_session with the same cookie should return None
+    from hjudge.lms.db.repositories.user import SQLAlchemyUserRepository
+
+    with uow:
+        repo = SQLAlchemyUserRepository(session=uow._session)  # type: ignore
+        result = repo.get_user_session(cookie)
+        uow.rollback()
+        assert result is None
