@@ -12,6 +12,9 @@ wheels/
 # Coverage test
 .coverage
 
+# MacOS
+.DS_Store
+
 ################# private ###############
 
 # Credentials
