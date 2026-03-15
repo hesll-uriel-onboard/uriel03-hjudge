@@ -2,39 +2,39 @@
 
 {% block content %}
 <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-        <h1 class="text-2xl font-bold text-gray-900 mb-6">Edit Course</h1>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Edit Course</h1>
 
         <form id="courseForm" class="space-y-6">
             <div>
-                <label for="title" class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
                 <input type="text" id="title" name="title" required
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     value="{{ course.title }}">
             </div>
 
             <div>
-                <label for="slug" class="block text-sm font-medium text-gray-700 mb-1">Slug (URL)</label>
+                <label for="slug" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Slug (URL)</label>
                 <input type="text" id="slug" name="slug" disabled
-                    class="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-500"
+                    class="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
                     value="{{ course.slug }}">
-                <p class="text-xs text-gray-500 mt-1">Slug cannot be changed after creation.</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Slug cannot be changed after creation.</p>
             </div>
 
             <div>
-                <label for="content" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label for="content" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
                 <textarea id="content" name="content" rows="4" required
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">{{ course.content }}</textarea>
+                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">{{ course.content }}</textarea>
             </div>
 
-            <div id="errorMessage" class="hidden text-red-600 text-sm"></div>
+            <div id="errorMessage" class="hidden text-red-600 dark:text-red-400 text-sm"></div>
 
             <div class="flex justify-end space-x-3">
-                <a href="/courses/{{ course.slug }}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                <a href="/courses/{{ course.slug }}" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                     Cancel
                 </a>
                 <button type="submit" id="submitBtn"
-                    class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                    class="bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white px-6 py-2 rounded-lg font-medium transition-colors">
                     Save Changes
                 </button>
             </div>

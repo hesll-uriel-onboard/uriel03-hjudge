@@ -3,9 +3,9 @@
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     <div class="flex justify-between items-center mb-8">
-        <h1 class="text-3xl font-bold text-gray-900">Courses</h1>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Courses</h1>
         {% if (user is defined) and not(user == none) %}
-        <a href="/courses/new" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+        <a href="/courses/new" class="bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
             Create Course
         </a>
         {% endif %}
@@ -14,15 +14,15 @@
     {% if courses %}
     <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {% for course in courses %}
-        <a href="/courses/{{ course.slug }}" class="block bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-            <h2 class="text-xl font-semibold text-gray-900 mb-2">{{ course.title }}</h2>
-            <p class="text-gray-600 line-clamp-2">{{ course.content }}</p>
+        <a href="/courses/{{ course.slug }}" class="block bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">{{ course.title }}</h2>
+            <p class="text-gray-600 dark:text-gray-300 line-clamp-2">{{ course.content }}</p>
         </a>
         {% endfor %}
     </div>
     {% else %}
     <div class="text-center py-12">
-        <p class="text-gray-500">No courses available yet.</p>
+        <p class="text-gray-500 dark:text-gray-400">No courses available yet.</p>
     </div>
     {% endif %}
 </div>
