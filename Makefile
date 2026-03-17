@@ -17,4 +17,4 @@ new-migrations:
 	${COMMAND} python migrations/new-version.py -m "${MSG}"
 
 migrate:
-	${COMMAND} --env-file=.creds/alembic.env alembic upgrade head
+	${COMMAND} alembic upgrade head
