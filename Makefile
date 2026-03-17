@@ -1,18 +1,20 @@
+COMMAND=uv run --env-file=.creds/.env
+
 test:
-	uv run pytest
+	${COMMAND} pytest
 
 run:
-	uv run litestar --app hjudge.app:app run
+	${COMMAND} litestar --app hjudge.app:app run
 
 debug:
-	uv run litestar --app hjudge.app:app run --debug
+	${COMMAND} litestar --app hjudge.app:app run --debug
 
 coverage:
-	uv run coverage run -m pytest
-	uv run coverage report --fail-under=80
+	${COMMAND} coverage run -m pytest
+	${COMMAND} coverage report --fail-under=80
 
 new-migrations:
-	uv run python migrations/new-version.py -m "${MSG}"
+	${COMMAND} python migrations/new-version.py -m "${MSG}"
 
 migrate:
-	uv run alembic upgrade head
+	${COMMAND} --env-file=.creds/alembic.env alembic upgrade head

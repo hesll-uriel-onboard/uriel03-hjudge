@@ -3,40 +3,40 @@
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900">Exercises</h1>
-        <p class="text-gray-600 mt-1">Browse and solve programming problems</p>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Exercises</h1>
+        <p class="text-gray-600 dark:text-gray-300 mt-1">Browse and solve programming problems</p>
     </div>
 
     {% if exercises %}
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full">
-                <thead class="bg-gray-50 border-b border-gray-200">
+                <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
                     <tr>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Judge</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Code</th>
-                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Title</th>
-                        <th class="px-6 py-4 text-center text-sm font-semibold text-gray-700">Result</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-200">Judge</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-200">Code</th>
+                        <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-200">Title</th>
+                        <th class="px-6 py-4 text-center text-sm font-semibold text-gray-700 dark:text-gray-200">Result</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200">
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                     {% for exercise in exercises %}
-                    <tr class="hover:bg-gray-50 transition-colors" data-exercise-id="{{ exercise['content'].id }}">
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" data-exercise-id="{{ exercise['content'].id }}">
                         <td class="px-6 py-4">
                             <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
                                 {% if exercise['content'].judge.value == 'CODEFORCES' %}
-                                bg-blue-100 text-blue-700
+                                bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300
                                 {% else %}
-                                bg-gray-100 text-gray-700
+                                bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-200
                                 {% endif %}
                             ">
                                 {{ exercise["content"].judge.value }}
                             </span>
                         </td>
-                        <td class="px-6 py-4 text-gray-600 font-mono">{{ exercise["content"].code }}</td>
+                        <td class="px-6 py-4 text-gray-600 dark:text-gray-300 font-mono">{{ exercise["content"].code }}</td>
                         <td class="px-6 py-4">
                             <a href="{{ exercise['url'] }}" target="_blank"
-                                class="text-indigo-600 hover:text-indigo-700 font-medium hover:underline">
+                                class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium hover:underline">
                                 {{ exercise["content"].title }}
                             </a>
                         </td>
@@ -47,7 +47,7 @@
                                 -
                             </span>
                             {% else %}
-                            <span class="text-gray-400">-</span>
+                            <span class="text-gray-400 dark:text-gray-500">-</span>
                             {% endif %}
                         </td>
                     </tr>
@@ -57,12 +57,12 @@
         </div>
     </div>
     {% else %}
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
+        <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
-        <h3 class="mt-4 text-lg font-medium text-gray-900">No exercises found</h3>
-        <p class="mt-2 text-gray-500">Check back later for new problems to solve.</p>
+        <h3 class="mt-4 text-lg font-medium text-gray-900 dark:text-white">No exercises found</h3>
+        <p class="mt-2 text-gray-500 dark:text-gray-400">Check back later for new problems to solve.</p>
     </div>
     {% endif %}
 </div>
@@ -105,7 +105,7 @@
 
             if (submissions.length === 0) {
                 display.textContent = "0";
-                display.className = "result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer bg-red-100 text-red-700";
+                display.className = "result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300";
             } else {
                 // Calculate max points
                 const maxPoints = Math.max(...submissions.map(s => s.points || 0));
@@ -115,11 +115,11 @@
 
                 // Color coding
                 if (hasAC) {
-                    display.className = "result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer bg-green-100 text-green-700 hover:bg-green-200";
+                    display.className = "result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900 dark:text-green-300 dark:hover:bg-green-800";
                 } else if (maxPoints > 0) {
-                    display.className = "result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer bg-yellow-100 text-yellow-700 hover:bg-yellow-200";
+                    display.className = "result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:hover:bg-yellow-800";
                 } else {
-                    display.className = "result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer bg-red-100 text-red-700 hover:bg-red-200";
+                    display.className = "result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800";
                 }
 
                 // Add click handler for modal

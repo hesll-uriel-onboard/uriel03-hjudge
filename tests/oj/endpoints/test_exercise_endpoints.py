@@ -5,7 +5,7 @@ import pytest
 from litestar.app import Litestar
 from litestar.testing import TestClient
 
-from hjudge.oj.models.judges.factory import DEFAULT_JUDGE_FACTORY
+from hjudge.oj.models.judges.factory import JudgeFactory
 
 valid_problems = [
     {"judge": "CODEFORCES", "code": "566A", "title": "Matching Names"},
@@ -75,10 +75,10 @@ two_valid_same_contest = [
     ],
 )
 def test_chaining_check_exercise_existed(
-    app: Litestar, exercises: List[Tuple[dict, int]]
+    mocked_app: Litestar, mock_judge_factory: JudgeFactory, exercises: List[Tuple[dict, int]]
 ):
     for exercise, status_code in exercises:
-        with TestClient(app=app) as client:
+        with TestClient(app=mocked_app) as client:
             client.get(
                 f"/api/exercises?judge={exercise["judge"]}&code={exercise["code"]}"
             )
@@ -93,7 +93,7 @@ def test_chaining_check_exercise_existed(
             assert result["judge"] == exercise["judge"]
             assert result["code"] == exercise["code"]
             assert result["title"] == exercise["title"]
-            assert result["url"] == DEFAULT_JUDGE_FACTORY.create_from(
+            assert result["url"] == mock_judge_factory.create_from(
                 exercise["judge"]
             ).get_exercise_url(exercise["code"])
 

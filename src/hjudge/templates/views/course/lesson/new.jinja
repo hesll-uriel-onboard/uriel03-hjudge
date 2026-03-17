@@ -2,33 +2,33 @@
 
 {% block content %}
 <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-        <h1 class="text-2xl font-bold text-gray-900 mb-6">Add New Lesson</h1>
-        <p class="text-gray-600 mb-6">Course: <span class="font-medium">{{ course.title }}</span></p>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Add New Lesson</h1>
+        <p class="text-gray-600 dark:text-gray-300 mb-6">Course: <span class="font-medium">{{ course.title }}</span></p>
 
         <form id="lessonForm" class="space-y-6">
             <div>
-                <label for="title" class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
                 <input type="text" id="title" name="title" required
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
             </div>
 
             <div>
-                <label for="slug" class="block text-sm font-medium text-gray-700 mb-1">Slug (URL)</label>
+                <label for="slug" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Slug (URL)</label>
                 <input type="text" id="slug" name="slug" required
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     placeholder="e.g., introduction">
             </div>
 
             <div>
-                <label for="content" class="block text-sm font-medium text-gray-700 mb-1">Content</label>
+                <label for="content" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Content</label>
                 <textarea id="content" name="content" rows="6" required
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></textarea>
             </div>
 
             <!-- Exercises Section -->
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Exercises</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Exercises</label>
 
                 <!-- Added exercises list -->
                 <div id="exerciseList" class="mb-4 space-y-2">
@@ -38,37 +38,37 @@
                 <!-- Add exercise section -->
                 <div class="flex items-end space-x-2">
                     <div class="flex-1">
-                        <label for="judgeSelect" class="block text-xs text-gray-500 mb-1">Judge</label>
+                        <label for="judgeSelect" class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Judge</label>
                         <select id="judgeSelect"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                             <option value="CODEFORCES">Codeforces</option>
                         </select>
                     </div>
                     <div class="flex-1">
-                        <label for="problemCode" class="block text-xs text-gray-500 mb-1">Problem Code</label>
+                        <label for="problemCode" class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Problem Code</label>
                         <input type="text" id="problemCode"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                             placeholder="e.g., 122A">
                     </div>
                     <button type="button" id="addExerciseBtn"
-                        class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                        class="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                         Add
                     </button>
                 </div>
-                <div id="exerciseError" class="text-red-600 text-sm mt-2 hidden"></div>
+                <div id="exerciseError" class="text-red-600 dark:text-red-400 text-sm mt-2 hidden"></div>
             </div>
 
             <!-- Hidden input for exercise IDs -->
             <input type="hidden" id="exercise_ids" name="exercise_ids">
 
-            <div id="errorMessage" class="hidden text-red-600 text-sm"></div>
+            <div id="errorMessage" class="hidden text-red-600 dark:text-red-400 text-sm"></div>
 
             <div class="flex justify-end space-x-3">
-                <a href="/courses/{{ course.slug }}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                <a href="/courses/{{ course.slug }}" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                     Cancel
                 </a>
                 <button type="submit" id="submitBtn"
-                    class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                    class="bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white px-6 py-2 rounded-lg font-medium transition-colors">
                     Add Lesson
                 </button>
             </div>
@@ -137,14 +137,14 @@
 
         selectedExercises.forEach((exercise, index) => {
             const div = document.createElement("div");
-            div.className = "flex items-center justify-between bg-gray-50 px-4 py-2 rounded-lg";
+            div.className = "flex items-center justify-between bg-gray-50 dark:bg-gray-700 px-4 py-2 rounded-lg";
             div.innerHTML = `
                 <div class="flex items-center space-x-2">
-                    <span class="text-xs font-medium text-gray-500">${exercise.judge}</span>
-                    <span class="font-medium">${exercise.code}</span>
-                    ${exercise.title && exercise.title !== exercise.code ? `<span class="text-gray-500 text-sm">${exercise.title}</span>` : ''}
+                    <span class="text-xs font-medium text-gray-500 dark:text-gray-400">${exercise.judge}</span>
+                    <span class="font-medium text-gray-900 dark:text-white">${exercise.code}</span>
+                    ${exercise.title && exercise.title !== exercise.code ? `<span class="text-gray-500 dark:text-gray-400 text-sm">${exercise.title}</span>` : ''}
                 </div>
-                <button type="button" onclick="removeExercise(${index})" class="text-red-500 hover:text-red-700 text-sm">
+                <button type="button" onclick="removeExercise(${index})" class="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-sm">
                     Remove
                 </button>
             `;

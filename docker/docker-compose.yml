@@ -3,4 +3,13 @@ services:
     image: postgres:18.3
     restart: always
     env_file: ../.creds/postgres.env
-    ports: 5432:5432
+    ports:
+      - 5432:5432
+
+  hjudge:
+    build: .
+    depends_on:
+      - postgres
+    ports:
+      - "8000:8000"
+    env_file: ../.creds/.env

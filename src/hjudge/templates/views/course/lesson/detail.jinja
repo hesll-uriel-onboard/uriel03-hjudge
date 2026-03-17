@@ -4,41 +4,41 @@
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     <!-- Breadcrumb -->
     <nav class="mb-6">
-        <a href="/courses/{{ course.slug }}" class="text-indigo-600 hover:text-indigo-700">{{ course.title }}</a>
+        <a href="/courses/{{ course.slug }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300">{{ course.title }}</a>
         <span class="mx-2 text-gray-400">/</span>
-        <span class="text-gray-600">Lesson {{ lesson.order }}: {{ lesson.title }}</span>
+        <span class="text-gray-600 dark:text-gray-300">Lesson {{ lesson.order }}: {{ lesson.title }}</span>
     </nav>
 
     <!-- Lesson Content -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8">
         <div class="flex justify-between items-start">
-            <h1 class="text-3xl font-bold text-gray-900 mb-6">{{ lesson.title }}</h1>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">{{ lesson.title }}</h1>
             {% if is_admin %}
-            <a href="/courses/{{ course.slug }}/lessons/{{ lesson.slug }}/edit" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+            <a href="/courses/{{ course.slug }}/lessons/{{ lesson.slug }}/edit" class="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                 Edit Lesson
             </a>
             {% endif %}
         </div>
-        <div class="prose max-w-none text-gray-700">
+        <div class="prose max-w-none text-gray-700 dark:text-gray-300">
             {{ lesson.content }}
         </div>
     </div>
 
     <!-- Exercises -->
-    <div id="exercisesSection" class="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hidden">
-        <div class="p-6 border-b border-gray-200">
-            <h2 class="text-xl font-semibold text-gray-900">Exercises</h2>
+    <div id="exercisesSection" class="mt-8 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hidden">
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Exercises</h2>
         </div>
         <table class="w-full">
-            <thead class="bg-gray-50 border-b border-gray-200">
+            <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
                 <tr>
-                    <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Judge</th>
-                    <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Code</th>
-                    <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700">Title</th>
-                    <th class="px-6 py-4 text-center text-sm font-semibold text-gray-700">Result</th>
+                    <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-200">Judge</th>
+                    <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-200">Code</th>
+                    <th class="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-200">Title</th>
+                    <th class="px-6 py-4 text-center text-sm font-semibold text-gray-700 dark:text-gray-200">Result</th>
                 </tr>
             </thead>
-            <tbody id="exercisesList" class="divide-y divide-gray-200">
+            <tbody id="exercisesList" class="divide-y divide-gray-200 dark:divide-gray-700">
                 <!-- Exercises will be loaded here -->
             </tbody>
         </table>
@@ -50,7 +50,7 @@
 <!-- Navigation -->
 <div class="mt-8 flex justify-between">
         {% if prev_lesson %}
-        <a href="/courses/{{ course.slug }}/lessons/{{ prev_lesson.slug }}" class="text-indigo-600 hover:text-indigo-700">
+        <a href="/courses/{{ course.slug }}/lessons/{{ prev_lesson.slug }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300">
             ← Previous: {{ prev_lesson.title }}
         </a>
         {% else %}
@@ -58,7 +58,7 @@
         {% endif %}
 
         {% if next_lesson %}
-        <a href="/courses/{{ course.slug }}/lessons/{{ next_lesson.slug }}" class="text-indigo-600 hover:text-indigo-700">
+        <a href="/courses/{{ course.slug }}/lessons/{{ next_lesson.slug }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300">
             Next: {{ next_lesson.title }} →
         </a>
         {% endif %}
@@ -85,20 +85,20 @@
                     const exercise = await response.json();
 
                     const tr = document.createElement("tr");
-                    tr.className = "hover:bg-gray-50 transition-colors";
+                    tr.className = "hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors";
                     tr.dataset.exerciseId = exercise.id;
                     tr.innerHTML = `
                         <td class="px-6 py-4">
                             <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
-                                ${exercise.judge === 'CODEFORCES' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}
+                                ${exercise.judge === 'CODEFORCES' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' : 'bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-200'}
                             ">
                                 ${exercise.judge}
                             </span>
                         </td>
-                        <td class="px-6 py-4 text-gray-600 font-mono">${exercise.code}</td>
+                        <td class="px-6 py-4 text-gray-600 dark:text-gray-300 font-mono">${exercise.code}</td>
                         <td class="px-6 py-4">
                             <a href="${exercise.url}" target="_blank"
-                                class="text-indigo-600 hover:text-indigo-700 font-medium hover:underline">
+                                class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium hover:underline">
                                 ${exercise.title || exercise.code}
                             </a>
                         </td>
@@ -109,7 +109,7 @@
                                 -
                             </span>
                             {% else %}
-                            <span class="text-gray-400">-</span>
+                            <span class="text-gray-400 dark:text-gray-500">-</span>
                             {% endif %}
                         </td>
                     `;
@@ -159,7 +159,7 @@
 
             if (submissions.length === 0) {
                 display.textContent = "0";
-                display.className = "result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer bg-red-100 text-red-700";
+                display.className = "result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300";
             } else {
                 // Calculate max points
                 const maxPoints = Math.max(...submissions.map(s => s.points || 0));
@@ -169,11 +169,11 @@
 
                 // Color coding
                 if (hasAC) {
-                    display.className = "result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer bg-green-100 text-green-700 hover:bg-green-200";
+                    display.className = "result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900 dark:text-green-300 dark:hover:bg-green-800";
                 } else if (maxPoints > 0) {
-                    display.className = "result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer bg-yellow-100 text-yellow-700 hover:bg-yellow-200";
+                    display.className = "result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:hover:bg-yellow-800";
                 } else {
-                    display.className = "result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer bg-red-100 text-red-700 hover:bg-red-200";
+                    display.className = "result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800";
                 }
 
                 // Add click handler for modal

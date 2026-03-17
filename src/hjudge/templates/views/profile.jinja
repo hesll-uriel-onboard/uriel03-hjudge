@@ -3,29 +3,29 @@
 {% block content %}
 <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900">Profile</h1>
-        <p class="text-gray-600 mt-1">Manage your Online Judge handles</p>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Profile</h1>
+        <p class="text-gray-600 dark:text-gray-300 mt-1">Manage your Online Judge handles</p>
     </div>
 
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Account Info</h2>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Account Info</h2>
         <div class="space-y-2">
-            <p class="text-gray-600">Username: <span class="font-medium text-gray-900">{{ user.username }}</span></p>
-            <p class="text-gray-600">Name: <span class="font-medium text-gray-900">{{ user.name }}</span></p>
+            <p class="text-gray-600 dark:text-gray-300">Username: <span class="font-medium text-gray-900 dark:text-white">{{ user.username }}</span></p>
+            <p class="text-gray-600 dark:text-gray-300">Name: <span class="font-medium text-gray-900 dark:text-white">{{ user.name }}</span></p>
         </div>
     </div>
 
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Judge Handles</h2>
-        <p class="text-gray-600 text-sm mb-4">Connect your Online Judge accounts to track your submissions automatically.</p>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Judge Handles</h2>
+        <p class="text-gray-600 dark:text-gray-300 text-sm mb-4">Connect your Online Judge accounts to track your submissions automatically.</p>
 
         <div class="space-y-4">
             <div class="flex items-center gap-4">
-                <label class="block text-sm font-medium text-gray-700 w-32">Codeforces:</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 w-32">Codeforces:</label>
                 <input type="text" id="cfHandle"
                     value="{% for uj in user_judges %}{% if uj.judge.value == 'CODEFORCES' %}{{ uj.handle }}{% endif %}{% endfor %}"
                     placeholder="Your Codeforces handle"
-                    class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+                    class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none transition-all">
             </div>
         </div>
 
@@ -33,7 +33,7 @@
 
         <div class="mt-6 flex justify-end">
             <button id="btnSave"
-                class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center">
+                class="bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center">
                 <span id="btnText">Save Changes</span>
                 <span id="btnSpinner" class="hidden ml-2">
                     {% include "components/spinner.jinja" %}
@@ -52,8 +52,8 @@
 
     function showMessage(message, isError = false) {
         msgEl.textContent = message;
-        msgEl.classList.remove("hidden", "text-green-600", "text-red-500");
-        msgEl.classList.add(isError ? "text-red-500" : "text-green-600");
+        msgEl.classList.remove("hidden", "text-green-600", "text-red-500", "dark:text-green-400", "dark:text-red-400");
+        msgEl.classList.add(isError ? "text-red-500 dark:text-red-400" : "text-green-600 dark:text-green-400");
     }
 
     function setLoading(loading) {

@@ -1,8 +1,11 @@
 """Create an empty database and migrate all"""
 
+import json
 import os
 import pathlib
+import re
 from typing import Generator
+from unittest.mock import MagicMock
 
 import pytest
 from alembic.config import Config
@@ -19,7 +22,8 @@ from hjudge.commons.db.uow import (
     SQLAlchemyUnitOfWork,
     SQLAlchemyUOWFactory,
 )
-from hjudge.oj.models.judges.factory import DEFAULT_JUDGE_FACTORY
+from hjudge.oj.models.judges import AbstractCrawler
+from hjudge.oj.models.judges.factory import DEFAULT_JUDGE_FACTORY, JudgeFactory
 
 CURRENT_DIRECTORY = pathlib.Path(__file__).parent
 NAME = ".db"
@@ -61,6 +65,65 @@ def run_migrations() -> None:
 run_migrations()
 
 
+# Mock data for Codeforces API responses
+MOCK_CF_CONTESTS = {
+    "566": [
+        {"contestId": 566, "index": "A", "name": "Matching Names"},
+    ],
+    "2205": [
+        {"contestId": 2205, "index": "G", "name": "Simons and Diophantus Equation"},
+    ],
+    "2201": [
+        {"contestId": 2201, "index": "F1", "name": "Monotone Monochrome Matrices (Medium Version)"},
+    ],
+    "2185": [
+        {"contestId": 2185, "index": "G", "name": "Mixing MEXes"},
+        {"contestId": 2185, "index": "D", "name": "OutOfMemoryError"},
+    ],
+}
+
+
+class MockCrawler(AbstractCrawler):
+    """Mock crawler that returns pre-recorded responses for Codeforces API"""
+
+    def get(self, url: str, *args, **kwargs):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+
+        if "contest.standings" in url:
+            # Extract contestId from URL like ...?contestId=566
+            match = re.search(r"contestId=(\d+)", url)
+            if match:
+                contest_id = match.group(1)
+                problems = MOCK_CF_CONTESTS.get(contest_id)
+                if problems:
+                    content = json.dumps({"status": "OK", "result": {"problems": problems}})
+                else:
+                    # Unknown contest - simulate CF error
+                    content = json.dumps({"status": "FAILED"})
+            else:
+                content = json.dumps({"status": "FAILED"})
+        else:
+            content = "{}"
+
+        mock_response.content = content.encode()
+        return mock_response
+
+
+@pytest.fixture(scope="session")
+def mock_judge_factory() -> JudgeFactory:
+    return JudgeFactory(MockCrawler())
+
+
+@pytest.fixture(scope="session")
+def mocked_app(engine: Engine, mock_judge_factory: JudgeFactory) -> Litestar:
+    app = provide_app(
+        SQLAlchemyUOWFactory(sessionmaker(bind=engine)), mock_judge_factory
+    )
+    app.debug = True
+    return app
+
+##################################
 @pytest.fixture(scope="session")
 def engine() -> Engine:
     return create_engine(SQLITE_CONNECTION_STRING)

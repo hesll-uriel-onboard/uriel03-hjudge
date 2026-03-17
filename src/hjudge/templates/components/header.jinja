@@ -1,24 +1,36 @@
-<nav class="bg-white shadow-sm border-b border-gray-200">
+<nav class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex items-center">
-                <a href="/" class="text-xl font-bold text-indigo-600 hover:text-indigo-700">
+                <a href="/" class="text-xl font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300">
                     HJudge
                 </a>
                 <div class="ml-10 flex items-center space-x-4">
-                    <a href="/exercises" class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                    <a href="/exercises" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
                         Exercises
                     </a>
-                    <a href="/courses" class="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                    <a href="/courses" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
                         Courses
                     </a>
                 </div>
             </div>
-            <div class="flex items-center">
+            <div class="flex items-center space-x-4">
+                <!-- Dark mode toggle -->
+                <button id="themeToggle" class="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" title="Toggle dark mode">
+                    <!-- Sun icon (shown in dark mode) -->
+                    <svg class="w-5 h-5 hidden dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    <!-- Moon icon (shown in light mode) -->
+                    <svg class="w-5 h-5 block dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                    </svg>
+                </button>
+
                 {% if (user is defined) and not(user == none) %}
                 <div class="flex items-center space-x-4">
-                    <span class="text-gray-700">Welcome, <span class="font-semibold">{{ user.name }}</span></span>
-                    <a href="/profile" class="text-indigo-600 hover:text-indigo-700 font-medium transition-colors">
+                    <span class="text-gray-700 dark:text-gray-300">Welcome, <span class="font-semibold">{{ user.name }}</span></span>
+                    <a href="/profile" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium transition-colors">
                         Profile
                     </a>
                     <button id="btnLogout" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
@@ -27,10 +39,10 @@
                 </div>
                 {% else %}
                 <div class="flex items-center space-x-3">
-                    <a href="/login" class="text-gray-600 hover:text-gray-900 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <a href="/login" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                         Login
                     </a>
-                    <a href="/register" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <a href="/register" class="bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                         Register
                     </a>
                 </div>
@@ -47,3 +59,16 @@
     });
 </script>
 {% endif %}
+
+<script>
+    // Theme toggle functionality
+    document.getElementById("themeToggle")?.addEventListener("click", function() {
+        if (document.documentElement.classList.contains("dark")) {
+            document.documentElement.classList.remove("dark");
+            localStorage.theme = "light";
+        } else {
+            document.documentElement.classList.add("dark");
+            localStorage.theme = "dark";
+        }
+    });
+</script>
