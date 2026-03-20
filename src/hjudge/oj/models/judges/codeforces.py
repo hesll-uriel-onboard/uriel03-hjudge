@@ -23,7 +23,7 @@ CF_VERDICT_MAP = {
     "TIME_LIMIT_EXCEEDED": Verdict.TLE,
     "MEMORY_LIMIT_EXCEEDED": Verdict.RTE,
     "RUNTIME_ERROR": Verdict.RTE,
-    "COMPILATION_ERROR": Verdict.RTE,
+    "COMPILATION_ERROR": Verdict.CE,
     "CHALLENGED": Verdict.WA,
     "SKIPPED": Verdict.WA,
     "TESTING": None,  # Still being judged

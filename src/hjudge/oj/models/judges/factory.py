@@ -6,12 +6,18 @@ from hjudge.oj.models.judges import (
     DefaultCrawler,
     JudgeEnum,
 )
+from hjudge.oj.models.judges.atcoder import AtcoderJudge
 from hjudge.oj.models.judges.codeforces import CodeforcesJudge
+from hjudge.oj.models.judges.dmoj import DmojJudge
+from hjudge.oj.models.judges.qoj import QojJudge
 
 
 class JudgeFactory:
     __enum_to_judge__: dict[JudgeEnum, Type[AbstractJudge]] = {
-        JudgeEnum.CODEFORCES: CodeforcesJudge
+        JudgeEnum.CODEFORCES: CodeforcesJudge,
+        JudgeEnum.DMOJ: DmojJudge,
+        JudgeEnum.ATCODER: AtcoderJudge,
+        JudgeEnum.QOJ: QojJudge,
     }
     __judges_dict__: dict[JudgeEnum, AbstractJudge] = {}
     crawler: AbstractCrawler
