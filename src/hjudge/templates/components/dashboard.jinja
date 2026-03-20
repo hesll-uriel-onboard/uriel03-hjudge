@@ -1,0 +1,117 @@
+<!-- Dashboard Component -->
+<div id="dashboard-container" class="mt-8">
+    <!-- Leaderboard Section -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Leaderboard</h3>
+        </div>
+        <div id="leaderboard-content" class="p-6">
+            <div class="flex items-center justify-center">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Progress Bar Component (for inline use) -->
+<template id="progress-bar-template">
+    <div class="flex items-center gap-3">
+        <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+            <div class="progress-fill bg-indigo-600 dark:bg-indigo-500 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+        <span class="progress-text text-sm font-bold text-gray-900 dark:text-white whitespace-nowrap">0%</span>
+    </div>
+</template>
+
+<script>
+async function loadDashboard(leaderboardUrl, breakdownLabels = null) {
+    // Load leaderboard
+    try {
+        const leaderboardResp = await fetch(leaderboardUrl);
+        if (leaderboardResp.ok) {
+            const leaderboardData = await leaderboardResp.json();
+            renderLeaderboard(leaderboardData, breakdownLabels);
+        }
+    } catch (e) {
+        console.error('Failed to load leaderboard:', e);
+        document.getElementById('leaderboard-content').innerHTML =
+            '<p class="text-gray-500 dark:text-gray-400 text-center">Failed to load leaderboard</p>';
+    }
+}
+
+function renderLeaderboard(data, breakdownLabels = null) {
+    const container = document.getElementById('leaderboard-content');
+
+    if (!data.entries || data.entries.length === 0) {
+        container.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center">No submissions yet</p>';
+        return;
+    }
+
+    // Get breakdown keys from first entry
+    const breakdownKeys = data.entries[0].breakdown ? Object.keys(data.entries[0].breakdown) : [];
+
+    let html = `
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-200">#</th>
+                        <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-200">Name</th>
+                        <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-200">Total</th>
+                        ${breakdownKeys.map((key, i) => `
+                            <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-200">
+                                ${breakdownLabels ? breakdownLabels[i] : key.slice(0, 8)}
+                            </th>
+                        `).join('')}
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+    `;
+
+    data.entries.forEach((entry, index) => {
+        const pointsColor = entry.total_points >= 80 ? 'text-green-600 dark:text-green-400' :
+                           entry.total_points >= 50 ? 'text-yellow-600 dark:text-yellow-400' :
+                           'text-red-600 dark:text-red-400';
+
+        html += `
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">${index + 1}</td>
+                <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">${entry.user.name}</td>
+                <td class="px-4 py-3 text-center text-sm font-bold ${pointsColor}">
+                    ${entry.total_points.toFixed(1)}%
+                </td>
+                ${breakdownKeys.map(key => {
+                    const val = entry.breakdown[key] || 0;
+                    const color = val >= 80 ? 'text-green-600 dark:text-green-400' :
+                                 val >= 50 ? 'text-yellow-600 dark:text-yellow-400' :
+                                 'text-red-600 dark:text-red-400';
+                    return `<td class="px-4 py-3 text-center text-sm ${color}">${val.toFixed(0)}</td>`;
+                }).join('')}
+            </tr>
+        `;
+    });
+
+    html += `
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    container.innerHTML = html;
+}
+
+// Helper to render a progress bar
+function renderProgressBar(containerId, percentage) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const template = document.getElementById('progress-bar-template');
+    const clone = template.content.cloneNode(true);
+
+    clone.querySelector('.progress-fill').style.width = `${percentage}%`;
+    clone.querySelector('.progress-text').textContent = `${percentage.toFixed(1)}%`;
+
+    container.innerHTML = '';
+    container.appendChild(clone);
+}
+</script>

@@ -1,6 +1,8 @@
 from typing import List, override
 from uuid import UUID
 
+from sqlalchemy import func
+
 from hjudge.commons.db.repositories import (
     AbstractRepository,
     SQLAlchemyAbstractRepository,
@@ -32,6 +34,22 @@ class AbstractSubmissionRepository(AbstractRepository):
     def get_submissions_by_exercise_and_user(
         self, exercise_id: UUID, user_id: UUID
     ) -> List[SubmissionEntity]:
+        raise NotImplementedError
+
+    def get_max_points_by_exercise_and_user(
+        self,
+        exercise_ids: List[UUID],
+        user_ids: List[UUID] | None = None,
+    ) -> dict[tuple[UUID, UUID], int]:
+        """Get max points per (exercise_id, user_id) pair.
+
+        Args:
+            exercise_ids: List of exercise IDs to query
+            user_ids: Optional list of user IDs to filter. If None, returns all users.
+
+        Returns:
+            Dict mapping (exercise_id, user_id) -> max_points
+        """
         raise NotImplementedError
 
 
@@ -117,3 +135,31 @@ class SQLAlchemySubmissionRepository(
             .order_by(SubmissionEntity.submitted_at.desc())
             .all()
         )
+
+    @override
+    def get_max_points_by_exercise_and_user(
+        self,
+        exercise_ids: List[UUID],
+        user_ids: List[UUID] | None = None,
+    ) -> dict[tuple[UUID, UUID], int]:
+        """Get max points per (exercise_id, user_id) pair."""
+        if not exercise_ids:
+            return {}
+
+        # Build query: SELECT exercise_id, user_id, MAX(points) GROUP BY exercise_id, user_id
+        query = (
+            self.session.query(
+                SubmissionEntity.exercise_id,
+                SubmissionEntity.user_id,
+                func.max(SubmissionEntity.points).label("max_points"),
+            )
+            .filter(SubmissionEntity.exercise_id.in_(exercise_ids))
+            .group_by(SubmissionEntity.exercise_id, SubmissionEntity.user_id)
+        )
+
+        if user_ids is not None:
+            query = query.filter(SubmissionEntity.user_id.in_(user_ids))
+
+        results = query.all()
+
+        return {(row.exercise_id, row.user_id): row.max_points for row in results}

@@ -1,4 +1,5 @@
 from hjudge.lms.endpoints.backend import course as backend_course
+from hjudge.lms.endpoints.backend import dashboard as backend_dashboard
 from hjudge.lms.endpoints.backend import user as backend_user
 from hjudge.lms.endpoints.frontend import course as frontend_course
 from hjudge.lms.endpoints.frontend import user as frontend_user
@@ -17,6 +18,10 @@ lms_endpoints = [
     backend_course.update_lesson,
     backend_course.add_admin,
     backend_course.remove_admin,
+    backend_dashboard.get_lesson_progress,
+    backend_dashboard.get_lesson_leaderboard,
+    backend_dashboard.get_course_progress,
+    backend_dashboard.get_course_leaderboard,
     frontend_user.home,
     frontend_user.register,
     frontend_user.login,
