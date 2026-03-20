@@ -4,7 +4,7 @@
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     <!-- Course Header -->
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 mb-8">
-        <div class="flex justify-between items-start">
+        <div class="flex justify-between items-start mb-4">
             <div>
                 <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">{{ course.title }}</h1>
                 <p class="text-gray-600 dark:text-gray-300">{{ course.content }}</p>
@@ -20,6 +20,13 @@
             </div>
             {% endif %}
         </div>
+        {% if (user is defined) and not(user == none) %}
+        <div id="course-progress" class="mt-4">
+            <div class="flex items-center justify-center">
+                <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600"></div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 
     <!-- Lessons List -->
@@ -32,12 +39,21 @@
         <div class="divide-y divide-gray-200 dark:divide-gray-700">
             {% for lesson in lessons %}
             <a href="/courses/{{ course.slug }}/lessons/{{ lesson.slug }}" class="block p-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                <div class="flex items-center">
-                    <span class="flex-shrink-0 w-8 h-8 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center text-sm font-medium mr-4">
-                        {{ lesson.order }}
-                    </span>
-                    <div>
-                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">{{ lesson.title }}</h3>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center flex-1">
+                        <span class="flex-shrink-0 w-8 h-8 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center text-sm font-medium mr-4">
+                            {{ lesson.order }}
+                        </span>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white">{{ lesson.title }}</h3>
+                            {% if (user is defined) and not(user == none) %}
+                            <div id="lesson-progress-{{ lesson.id }}" class="mt-2">
+                                <div class="h-2.5 bg-gray-200 dark:bg-gray-700 rounded-full w-48">
+                                    <div class="h-2.5 bg-gray-300 dark:bg-gray-600 rounded-full" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
             </a>
@@ -49,5 +65,39 @@
         </div>
         {% endif %}
     </div>
+
+    <!-- Dashboard -->
+    {% include "components/dashboard.jinja" %}
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const courseId = '{{ course.id }}';
+    const lessonIds = [{% for lesson in lessons %}'{{ lesson.id }}'{% if not loop.last %}, {% endif %}{% endfor %}];
+    const lessonTitles = [{% for lesson in lessons %}'{{ lesson.title }}'{% if not loop.last %}, {% endif %}{% endfor %}];
+
+    {% if (user is defined) and not(user == none) %}
+    // Load course progress
+    fetch(`/api/dashboard/course/${courseId}`)
+        .then(resp => resp.json())
+        .then(data => {
+            renderProgressBar('course-progress', data.total_points);
+            // Render each lesson's progress
+            lessonIds.forEach(lessonId => {
+                const progress = data.breakdown[lessonId] || 0;
+                renderProgressBar(`lesson-progress-${lessonId}`, progress);
+            });
+        })
+        .catch(e => {
+            document.getElementById('course-progress').innerHTML = '';
+        });
+    {% endif %}
+
+    // Load leaderboard
+    loadDashboard(
+        `/api/dashboard/course/${courseId}/leaderboard`,
+        lessonTitles
+    );
+});
+</script>
 {% endblock %}

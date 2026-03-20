@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from hjudge.commons.db.repositories import (
     AbstractRepository,
     SQLAlchemyAbstractRepository,
@@ -13,6 +15,9 @@ class AbstractUserRepository(AbstractRepository):
 
     # main functionalities
     def get_user(self, username: str) -> UserEntity | None:
+        raise NotImplementedError
+
+    def get_user_by_id(self, user_id: UUID) -> UserEntity | None:
         raise NotImplementedError
 
     def add_user(self, user: UserEntity):
@@ -39,6 +44,13 @@ class SQLAlchemyUserRepository(
         return (
             self.session.query(UserEntity)
             .filter_by(username=username)
+            .one_or_none()
+        )
+
+    def get_user_by_id(self, user_id: UUID) -> UserEntity | None:
+        return (
+            self.session.query(UserEntity)
+            .filter_by(id=user_id)
             .one_or_none()
         )
 

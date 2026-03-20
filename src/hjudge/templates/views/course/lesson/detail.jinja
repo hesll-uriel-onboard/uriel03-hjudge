@@ -10,22 +10,32 @@
     </nav>
 
     <!-- Lesson Content -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8">
-        <div class="flex justify-between items-start">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">{{ lesson.title }}</h1>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 mb-8">
+        <div class="flex justify-between items-start mb-4">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">{{ lesson.title }}</h1>
             {% if is_admin %}
             <a href="/courses/{{ course.slug }}/lessons/{{ lesson.slug }}/edit" class="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                 Edit Lesson
             </a>
             {% endif %}
         </div>
-        <div class="prose max-w-none text-gray-700 dark:text-gray-300">
+        <div class="prose max-w-none text-gray-700 dark:text-gray-300 mb-4">
             {{ lesson.content }}
         </div>
+        {% if (user is defined) and not(user == none) %}
+        <div id="lesson-progress" class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Your Progress</div>
+            <div id="lesson-progress-bar">
+                <div class="flex items-center justify-center">
+                    <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600"></div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 
     <!-- Exercises -->
-    <div id="exercisesSection" class="mt-8 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hidden">
+    <div id="exercisesSection" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hidden">
         <div class="p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Exercises</h2>
         </div>
@@ -43,6 +53,9 @@
             </tbody>
         </table>
     </div>
+
+    <!-- Dashboard -->
+    {% include "components/dashboard.jinja" %}
 
 <!-- Submission History Modal Component -->
 {% include "components/submission_modal.jinja" %}
@@ -66,11 +79,15 @@
 </div>
 
 <script>
+    const lessonId = '{{ lesson.id }}';
     const exerciseIds = [
         {% for id in lesson.exercise_ids %}
             "{{ id }}",
         {% endfor %}
     ];
+
+    // Store exercise info for leaderboard labels
+    const exerciseInfo = {};
 
     async function loadExercises() {
         if (!exerciseIds || exerciseIds.length === 0) return;
@@ -83,6 +100,10 @@
                 const response = await fetch(`/api/exercises/${exerciseId}`);
                 if (response.ok) {
                     const exercise = await response.json();
+
+                    // Store for leaderboard labels
+                    const judgeShort = exercise.judge === 'CODEFORCES' ? 'CF' : exercise.judge.slice(0, 2);
+                    exerciseInfo[exercise.id] = `${judgeShort}_${exercise.code}`;
 
                     const tr = document.createElement("tr");
                     tr.className = "hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors";
@@ -132,57 +153,61 @@
     const USER_ID = "{{ user.id }}";
 
     async function loadSubmissionResults() {
-        const resultDisplays = document.querySelectorAll('.result-display');
-        const exerciseIds = Array.from(resultDisplays).map(el => el.dataset.exerciseId);
+        // Use batch API instead of N+1 queries
+        try {
+            const response = await fetch(`/api/submissions/batch?user=${USER_ID}&exercises=${exerciseIds.join(',')}`);
+            if (response.ok) {
+                const maxPoints = await response.json();
 
-        const promises = exerciseIds.map(async exerciseId => {
-            try {
-                const response = await fetch(`/api/submissions?user=${USER_ID}&exercise=${exerciseId}`);
-                if (response.ok) {
-                    const submissions = await response.json();
-                    return { exerciseId, submissions };
-                }
-            } catch (error) {
-                console.error(`Failed to load submissions for exercise ${exerciseId}:`, error);
+                document.querySelectorAll('.result-display').forEach(display => {
+                    const exerciseId = display.dataset.exerciseId;
+                    const points = maxPoints[exerciseId] || 0;
+
+                    display.textContent = points;
+
+                    if (points === 0) {
+                        display.className = "result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300";
+                    } else if (points === 100) {
+                        display.className = "result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900 dark:text-green-300 dark:hover:bg-green-800";
+                    } else {
+                        display.className = "result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:hover:bg-yellow-800";
+                    }
+
+                    // Load submissions for modal on click
+                    display.addEventListener('click', async () => {
+                        if (!exerciseSubmissions[exerciseId]) {
+                            const resp = await fetch(`/api/submissions?user=${USER_ID}&exercise=${exerciseId}`);
+                            if (resp.ok) {
+                                exerciseSubmissions[exerciseId] = await resp.json();
+                            }
+                        }
+                        showSubmissionHistory(exerciseId);
+                    });
+                });
             }
-            return { exerciseId, submissions: [] };
-        });
-
-        const results = await Promise.all(promises);
-
-        results.forEach(({ exerciseId, submissions }) => {
-            const display = document.querySelector(`.result-display[data-exercise-id="${exerciseId}"]`);
-            if (!display) return;
-
-            // Store submissions for modal
-            exerciseSubmissions[exerciseId] = submissions;
-
-            if (submissions.length === 0) {
-                display.textContent = "0";
-                display.className = "result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300";
-            } else {
-                // Calculate max points
-                const maxPoints = Math.max(...submissions.map(s => s.points || 0));
-                const hasAC = submissions.some(s => s.verdict === "AC");
-
-                display.textContent = maxPoints;
-
-                // Color coding
-                if (hasAC) {
-                    display.className = "result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900 dark:text-green-300 dark:hover:bg-green-800";
-                } else if (maxPoints > 0) {
-                    display.className = "result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:hover:bg-yellow-800";
-                } else {
-                    display.className = "result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800";
-                }
-
-                // Add click handler for modal
-                display.addEventListener('click', () => showSubmissionHistory(exerciseId));
-            }
-        });
+        } catch (error) {
+            console.error('Failed to load submission results:', error);
+        }
     }
+
+    // Load lesson progress
+    fetch(`/api/dashboard/lesson/${lessonId}`)
+        .then(resp => resp.json())
+        .then(data => {
+            renderProgressBar('lesson-progress-bar', data.total_points);
+        })
+        .catch(e => {
+            document.getElementById('lesson-progress-bar').innerHTML = '';
+        });
     {% endif %}
 
-    loadExercises();
+    // Load dashboard after exercises are loaded (to get exercise info for labels)
+    loadExercises().then(() => {
+        const breakdownLabels = exerciseIds.map(id => exerciseInfo[id] || id.slice(0, 8));
+        loadDashboard(
+            `/api/dashboard/lesson/${lessonId}/leaderboard`,
+            breakdownLabels
+        );
+    });
 </script>
 {% endblock %}

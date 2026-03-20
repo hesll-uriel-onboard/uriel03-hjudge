@@ -14,12 +14,14 @@ from hjudge.lms.endpoints.authentication import authenticate_user
 from hjudge.lms.endpoints.responses.user import COOKIE_KEY
 from hjudge.lms.errors import NotAuthorizedError
 from hjudge.oj.db.repositories.exercise import AbstractExerciseRepository
+from hjudge.oj.db.repositories.submission import AbstractSubmissionRepository
 from hjudge.oj.endpoints.requests import SubmitRequest, UpdateUserJudgesRequest
 from hjudge.oj.endpoints.responses import (
     ExerciseResponse,
     SubmissionsResponse,
     SubmitResponse,
     UserJudgesResponse,
+    BatchMaxPointsResponse,
 )
 from hjudge.oj.errors import ExerciseNotFoundError, JudgeNotExistedError
 from hjudge.oj.models.judges import JudgeEnum
@@ -126,6 +128,42 @@ async def get_submissions_from_user_and_exercise(
     return get_litestar_response(response)
 
 
+@get("/api/submissions/batch")
+async def get_batch_max_points(
+    query: dict[str, str],
+    uow_factory: AbstractUOWFactory,
+) -> litestar.Response:
+    """Get max points for multiple exercises for a single user.
+
+    Query params:
+        user: user_id (required)
+        exercises: comma-separated list of exercise_ids (required)
+    """
+    try:
+        user_id = UUID(query["user"])
+        exercise_ids = [UUID(eid) for eid in query.get("exercises", "").split(",") if eid]
+
+        if not exercise_ids:
+            response = BatchMaxPointsResponse({})
+        else:
+            with uow_factory.create_uow() as uow:
+                submission_repo: AbstractSubmissionRepository = uow.create_repository(
+                    AbstractSubmissionRepository
+                )  # pyright: ignore
+                max_points = submission_repo.get_max_points_by_exercise_and_user(
+                    exercise_ids, [user_id]
+                )
+                # Convert to exercise_id -> points mapping
+                result = {
+                    str(exercise_id): max_points.get((exercise_id, user_id), 0)
+                    for exercise_id in exercise_ids
+                }
+                response = BatchMaxPointsResponse(result)
+    except AbstractError as e:
+        response = ErrorResponse(e)
+    return get_litestar_response(response)
+
+
 @get("/api/users/judges")
 async def get_user_judges(
     request: Request,
@@ -162,6 +200,7 @@ all_endpoints = [
     get_exercise_by_id,
     check_exercise_existence,
     get_submissions_from_user_and_exercise,
+    get_batch_max_points,
     get_user_judges,
     update_user_judges,
 ]

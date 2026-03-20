@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from hjudge.commons.db.uow import AbstractUnitOfWork
 from hjudge.lms.db.entities.user import UserEntity, UserSessionEntity
 from hjudge.lms.db.repositories.user import AbstractUserRepository
@@ -25,6 +27,19 @@ def register(
         uow.commit()
 
     return user
+
+
+def get_user(user_id: UUID, uow: AbstractUnitOfWork) -> User | None:
+    """Get a user by ID."""
+    with uow:
+        user_repo: AbstractUserRepository = uow.create_repository(
+            AbstractUserRepository
+        )  # pyright: ignore
+
+        user_entity = user_repo.get_user_by_id(user_id)
+        if user_entity is None:
+            return None
+        return user_entity.as_model()
 
 
 def login(username: str, password: str, uow: AbstractUnitOfWork) -> UserSession:

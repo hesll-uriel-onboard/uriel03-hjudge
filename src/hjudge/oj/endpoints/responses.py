@@ -1,4 +1,4 @@
-from typing import List, override
+from typing import Dict, List, override
 
 from hjudge.commons.endpoints.responses import AbstractResponse
 from hjudge.commons.endpoints.status_codes import HTTP_200_OK
@@ -38,6 +38,17 @@ class SubmissionsResponse(AbstractResponse):
             )
             result.append(submission_dict)
         super().__init__(status_code=HTTP_200_OK, content=result)
+
+
+class BatchMaxPointsResponse(AbstractResponse):
+    @override
+    def __init__(self, max_points: Dict[str, int]):
+        """Response for batch max points query.
+
+        Args:
+            max_points: Dict mapping exercise_id (as string) -> max_points
+        """
+        super().__init__(status_code=HTTP_200_OK, content=max_points)
 
 
 class UserJudgesResponse(AbstractResponse):
