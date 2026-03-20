@@ -12,6 +12,9 @@ from hjudge.commons.models import Base
 
 class JudgeEnum(StrEnum):
     CODEFORCES = "CODEFORCES"
+    DMOJ = "DMOJ"
+    ATCODER = "ATCODER"
+    QOJ = "QOJ"
 
 
 class Exercise(Base):

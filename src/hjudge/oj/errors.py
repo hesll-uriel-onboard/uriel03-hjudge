@@ -33,3 +33,24 @@ class CodeforcesContestNotFoundError(AbstractError):
         super().__init__(
             HTTP_404_NOT_FOUND, "Codeforces contest not found", *args
         )
+
+
+class DmojProblemNotFoundError(AbstractError):
+    """DMOJ problem not found"""
+
+    def __init__(self, *args: object) -> None:
+        super().__init__(HTTP_404_NOT_FOUND, "DMOJ problem not found", *args)
+
+
+class AtcoderProblemNotFoundError(AbstractError):
+    """AtCoder problem not found"""
+
+    def __init__(self, *args: object) -> None:
+        super().__init__(HTTP_404_NOT_FOUND, "AtCoder problem not found", *args)
+
+
+class QojProblemNotFoundError(AbstractError):
+    """QOJ problem not found"""
+
+    def __init__(self, *args: object) -> None:
+        super().__init__(HTTP_404_NOT_FOUND, "QOJ problem not found", *args)

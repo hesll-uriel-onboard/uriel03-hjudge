@@ -12,6 +12,8 @@ class Verdict(Enum):
     WA = "WA"
     TLE = "TLE"
     RTE = "RTE"
+    CE = "CE"
+    IE = "IE"
 
 
 class Submission(Base):

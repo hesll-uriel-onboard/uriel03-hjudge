@@ -189,7 +189,7 @@ def test_crawl_user_submissions_verdict_mapping():
         ("TIME_LIMIT_EXCEEDED", Verdict.TLE),
         ("RUNTIME_ERROR", Verdict.RTE),
         ("MEMORY_LIMIT_EXCEEDED", Verdict.RTE),  # Maps to RTE
-        ("COMPILATION_ERROR", Verdict.RTE),  # Maps to RTE
+        ("COMPILATION_ERROR", Verdict.CE),  # Maps to CE (updated)
     ]
 
     for cf_verdict, expected_verdict in test_cases:
