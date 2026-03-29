@@ -16,15 +16,11 @@
 </div>
 
 <script>
-// Store submissions data for each exercise
-const exerciseSubmissions = {};
-
-function showSubmissionHistory(exerciseId) {
-    const submissions = exerciseSubmissions[exerciseId] || [];
+function showSubmissionHistory(exerciseId, submissions) {
     const modal = document.getElementById('submissionModal');
     const content = document.getElementById('modalContent');
 
-    if (submissions.length === 0) {
+    if (!submissions || submissions.length === 0) {
         content.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center">No submissions yet</p>';
     } else {
         const verdictColors = {

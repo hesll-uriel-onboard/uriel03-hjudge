@@ -42,9 +42,22 @@
                         </td>
                         <td class="px-6 py-4 text-center">
                             {% if (user is defined) and not(user == none) %}
+                            {% set exercise_id = exercise['content'].id | string %}
+                            {% set prog = progress.get(exercise_id, {}) %}
+                            {% set max_points = prog.get('max_points', 0) %}
+                            {% set has_ac = prog.get('has_ac', false) %}
                             <span class="result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer"
-                                data-exercise-id="{{ exercise['content'].id }}">
-                                -
+                                data-exercise-id="{{ exercise['content'].id }}"
+                                {% if max_points > 0 or has_ac %}
+                                data-points="{{ max_points }}"
+                                data-has-ac="{{ 'true' if has_ac else 'false' }}"
+                                {% endif %}
+                                onclick="loadAndShowHistory('{{ exercise['content'].id }}', '{{ user.id }}')">
+                                {% if max_points > 0 or has_ac %}
+                                {{ max_points }}
+                                {% else %}
+                                0
+                                {% endif %}
                             </span>
                             {% else %}
                             <span class="text-gray-400 dark:text-gray-500">-</span>
@@ -56,6 +69,36 @@
             </table>
         </div>
     </div>
+
+    {# Pagination controls #}
+    {% if total_pages > 1 %}
+    <div class="mt-6 flex items-center justify-between">
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+            Showing page {{ page }} of {{ total_pages }} ({{ total }} total exercises)
+        </p>
+        <div class="flex gap-2">
+            {% if page > 1 %}
+            <a href="?page={{ page - 1 }}" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600">
+                Previous
+            </a>
+            {% else %}
+            <span class="px-4 py-2 text-sm font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg cursor-not-allowed">
+                Previous
+            </span>
+            {% endif %}
+
+            {% if page < total_pages %}
+            <a href="?page={{ page + 1 }}" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">
+                Next
+            </a>
+            {% else %}
+            <span class="px-4 py-2 text-sm font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg cursor-not-allowed">
+                Next
+            </span>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
     {% else %}
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
         <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -74,61 +117,37 @@
 <script>
     const USER_ID = "{{ user.id }}";
 
-    // Fetch all submission statuses in parallel
-    async function loadSubmissionResults() {
+    // Initialize result displays with proper styling
+    function initResultDisplays() {
         const resultDisplays = document.querySelectorAll('.result-display');
-        const exerciseIds = Array.from(resultDisplays).map(el => el.dataset.exerciseId);
+        resultDisplays.forEach(display => {
+            const hasAc = display.dataset.hasAc === 'true';
+            const points = parseInt(display.dataset.points || '0');
 
-        // Make all requests in parallel using Promise.all
-        const promises = exerciseIds.map(async exerciseId => {
-            try {
-                const response = await fetch(`/api/submissions?user=${USER_ID}&exercise=${exerciseId}`);
-                if (response.ok) {
-                    const submissions = await response.json();
-                    return { exerciseId, submissions };
-                }
-            } catch (error) {
-                console.error(`Failed to check status for exercise ${exerciseId}:`, error);
-            }
-            return { exerciseId, submissions: [] };
-        });
-
-        const results = await Promise.all(promises);
-
-        // Update result displays from results
-        results.forEach(({ exerciseId, submissions }) => {
-            const display = document.querySelector(`.result-display[data-exercise-id="${exerciseId}"]`);
-            if (!display) return;
-
-            // Store submissions for modal
-            exerciseSubmissions[exerciseId] = submissions;
-
-            if (submissions.length === 0) {
-                display.textContent = "0";
-                display.className = "result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300";
+            if (hasAc) {
+                display.className = "result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900 dark:text-green-300 dark:hover:bg-green-800";
+            } else if (points > 0) {
+                display.className = "result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:hover:bg-yellow-800";
             } else {
-                // Calculate max points
-                const maxPoints = Math.max(...submissions.map(s => s.points || 0));
-                const hasAC = submissions.some(s => s.verdict === "AC");
-
-                display.textContent = maxPoints;
-
-                // Color coding
-                if (hasAC) {
-                    display.className = "result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900 dark:text-green-300 dark:hover:bg-green-800";
-                } else if (maxPoints > 0) {
-                    display.className = "result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:hover:bg-yellow-800";
-                } else {
-                    display.className = "result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800";
-                }
-
-                // Add click handler for modal
-                display.addEventListener('click', () => showSubmissionHistory(exerciseId));
+                display.className = "result-display inline-flex items-center justify-center w-12 h-8 rounded-lg text-sm font-bold cursor-pointer bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800";
             }
         });
     }
 
-    loadSubmissionResults();
+    // Load and show submission history on click
+    async function loadAndShowHistory(exerciseId, userId) {
+        try {
+            const response = await fetch(`/api/submissions?user=${userId}&exercise=${exerciseId}`);
+            if (response.ok) {
+                const submissions = await response.json();
+                showSubmissionHistory(exerciseId, submissions);
+            }
+        } catch (error) {
+            console.error('Failed to load submission history:', error);
+        }
+    }
+
+    initResultDisplays();
 </script>
 {% endif %}
 {% endblock %}
