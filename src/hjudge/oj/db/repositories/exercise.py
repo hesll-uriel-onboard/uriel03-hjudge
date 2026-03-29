@@ -1,7 +1,7 @@
 from typing import List, override
 from uuid import UUID
 
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, func, or_
 
 from hjudge.commons.db.repositories import (
     AbstractRepository,
@@ -15,7 +15,18 @@ class AbstractExerciseRepository(AbstractRepository):
     def get_exercise(self, id: UUID) -> ExerciseEntity | None:
         raise NotImplementedError
 
-    def get_all_exercises(self) -> List[ExerciseEntity]:
+    def get_exercises(
+        self, page: int | None = None, per_page: int = 20
+    ) -> tuple[List[ExerciseEntity], int]:
+        """Get exercises with optional pagination.
+
+        Args:
+            page: Page number (1-indexed). If None, returns all exercises.
+            per_page: Number of exercises per page.
+
+        Returns:
+            Tuple of (exercises list, total count)
+        """
         raise NotImplementedError
 
     def get_exercise_by_judge_and_code(
@@ -43,8 +54,17 @@ class SQLAlchemyExerciseRepostory(
         return self.session.query(ExerciseEntity).filter_by(id=id).one_or_none()
 
     @override
-    def get_all_exercises(self) -> List[ExerciseEntity]:
-        return self.session.query(ExerciseEntity).all()
+    def get_exercises(
+        self, page: int | None = None, per_page: int = 20
+    ) -> tuple[List[ExerciseEntity], int]:
+        query = self.session.query(ExerciseEntity)
+        total = query.count()
+
+        if page is not None:
+            offset = (page - 1) * per_page
+            query = query.offset(offset).limit(per_page)
+
+        return query.all(), total
 
     @override
     def get_exercise_by_judge_and_code(
