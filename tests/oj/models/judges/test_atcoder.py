@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timezone
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, AsyncMock
 
 import pytest
 
@@ -109,7 +109,8 @@ class TestAtcoderJudge:
         assert dt is not None
         assert dt.hour == 12
 
-    def test_crawl_user_submissions_mocked(self):
+    @pytest.mark.asyncio
+    async def test_crawl_user_submissions_mocked(self):
         """Test crawling submissions with mocked HTML response"""
         # Sample HTML table for submissions
         html_content = """
@@ -147,16 +148,17 @@ class TestAtcoderJudge:
         </html>
         """
 
-        mock_crawler = MagicMock()
-        mock_crawler.get_page_content = MagicMock(return_value=html_content)
+        # Create mock browser that returns HTML content
+        mock_browser = MagicMock()
+        mock_browser.get_page_content = AsyncMock(return_value=html_content)
 
         judge = AtcoderJudge(MagicMock())
-        judge._get_browser = MagicMock(return_value=mock_crawler)
+        judge._browser = mock_browser
 
         user_judge = make_user_judge()
         from_timestamp = datetime.fromtimestamp(0, tz=timezone.utc)
 
-        submissions = judge.crawl_user_submissions(user_judge, from_timestamp)
+        submissions = await judge.crawl_user_submissions(user_judge, from_timestamp)
 
         assert len(submissions) == 2
         assert submissions[0].submission_id == "12345678"

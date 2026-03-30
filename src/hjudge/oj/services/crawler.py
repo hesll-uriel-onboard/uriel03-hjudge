@@ -12,7 +12,7 @@ from hjudge.oj.models.judges.factory import JudgeFactory
 from hjudge.oj.models.user_judge import UserJudge
 
 
-def crawl_all_users(uow: AbstractUnitOfWork, judge_factory: JudgeFactory) -> None:
+async def crawl_all_users(uow: AbstractUnitOfWork, judge_factory: JudgeFactory) -> None:
     """Crawl submissions for all UserJudge entries.
 
     For each UserJudge:
@@ -47,7 +47,9 @@ def crawl_all_users(uow: AbstractUnitOfWork, judge_factory: JudgeFactory) -> Non
             if last_crawled.tzinfo is None:
                 last_crawled = last_crawled.replace(tzinfo=timezone.utc)
 
-            submissions = judge.crawl_user_submissions(user_judge, last_crawled)
+            # Use async context manager for browser lifecycle
+            async with judge:
+                submissions = await judge.crawl_user_submissions(user_judge, last_crawled)
 
             if not submissions:
                 continue

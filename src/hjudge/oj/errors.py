@@ -54,3 +54,10 @@ class QojProblemNotFoundError(AbstractError):
 
     def __init__(self, *args: object) -> None:
         super().__init__(HTTP_404_NOT_FOUND, "QOJ problem not found", *args)
+
+
+class LqdojProblemNotFoundError(AbstractError):
+    """LQDOJ problem not found"""
+
+    def __init__(self, *args: object) -> None:
+        super().__init__(HTTP_404_NOT_FOUND, "LQDOJ problem not found", *args)

@@ -5,6 +5,7 @@ from typing import Any, Iterable, List, Self, override
 from hjudge.commons.endpoints.status_codes import HTTP_200_OK
 from hjudge.oj.errors import DmojProblemNotFoundError, ExerciseNotFoundError
 from hjudge.oj.models.judges import (
+    AbstractCrawler,
     AbstractJudge,
     Exercise,
     JudgeEnum,
@@ -50,7 +51,11 @@ class DmojExercise(Exercise):
 
 
 class DmojJudge(AbstractJudge):
-    """DMOJ judge implementation using REST API"""
+    """DMOJ judge implementation using REST API.
+
+    This is an async context manager for interface consistency with
+    browser-based judges, but doesn't use browser automation.
+    """
 
     BASE_URL = "https://dmoj.ca"
     API_URL = f"{BASE_URL}/api/v2"
@@ -60,6 +65,14 @@ class DmojJudge(AbstractJudge):
     @property
     def cached(self) -> dict[str, List[Exercise]]:
         return DmojJudge.__cached
+
+    async def __aenter__(self) -> Self:
+        """No-op context entry (HTTP-based, no browser needed)."""
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+        """No-op context exit."""
+        return None
 
     @override
     def get_batch_config(self, from_exercise: str) -> dict[str, Any]:
@@ -71,7 +84,7 @@ class DmojJudge(AbstractJudge):
         return f"{self.BASE_URL}/problem/{code}"
 
     @override
-    def crawl_exercises_batch(self, url: str, **kwargs) -> Iterable[Exercise]:
+    async def crawl_exercises_batch(self, url: str, **kwargs) -> Iterable[Exercise]:
         """Fetch a single problem from DMOJ API.
 
         DMOJ doesn't have a batch endpoint for problems, so we fetch individually.
@@ -109,7 +122,7 @@ class DmojJudge(AbstractJudge):
         return f"{self.BASE_URL}/submission/{submission_id}"
 
     @override
-    def crawl_user_submissions(
+    async def crawl_user_submissions(
         self, user_judge: UserJudge, from_timestamp: datetime
     ) -> list[Submission]:
         """Crawl submissions for a DMOJ user after the given timestamp.

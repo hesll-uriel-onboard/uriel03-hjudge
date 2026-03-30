@@ -31,11 +31,11 @@ def yield_judge_factory(state: State):
     yield state["judge_factory"]
 
 
-def run_crawler(state: State):
+async def run_crawler(state: State):
     """Background task to crawl user submissions."""
     uow_factory: AbstractUOWFactory = state["uow_factory"]
     judge_factory: JudgeFactory = state["judge_factory"]
-    crawl_all_users(uow_factory.create_uow(), judge_factory)
+    await crawl_all_users(uow_factory.create_uow(), judge_factory)
 
 
 def on_startup(app: Litestar):

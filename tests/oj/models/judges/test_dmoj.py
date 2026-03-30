@@ -1,7 +1,7 @@
 import json
 import uuid
 from datetime import datetime, timezone
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, AsyncMock
 
 import pytest
 
@@ -90,7 +90,8 @@ class TestDmojJudge:
         url = judge.get_submission_url("123456")
         assert url == "https://dmoj.ca/submission/123456"
 
-    def test_crawl_exercises_batch(self):
+    @pytest.mark.asyncio
+    async def test_crawl_exercises_batch(self):
         problem_data = {
             "code": "aplusb",
             "name": "A Plus B",
@@ -103,14 +104,15 @@ class TestDmojJudge:
         mock_crawler = MockCrawler({"content": json.dumps(response)})
         judge = DmojJudge(mock_crawler)
 
-        exercises = list(judge.crawl_exercises_batch("", code="aplusb"))
+        exercises = list(await judge.crawl_exercises_batch("", code="aplusb"))
 
         assert len(exercises) == 1
         assert exercises[0].code == "aplusb"
         assert exercises[0].title == "A Plus B"
         assert exercises[0].judge == JudgeEnum.DMOJ
 
-    def test_crawl_user_submissions(self):
+    @pytest.mark.asyncio
+    async def test_crawl_user_submissions(self):
         submissions_data = [
             make_dmoj_submission(
                 submission_id=100,
@@ -143,7 +145,7 @@ class TestDmojJudge:
         user_judge = make_user_judge()
 
         from_timestamp = datetime.fromtimestamp(0, tz=timezone.utc)
-        submissions = judge.crawl_user_submissions(user_judge, from_timestamp)
+        submissions = await judge.crawl_user_submissions(user_judge, from_timestamp)
 
         assert len(submissions) == 3
         assert submissions[0].submission_id == "100"
@@ -158,7 +160,8 @@ class TestDmojJudge:
         assert submissions[2].exercise.code == "testprob"
         assert submissions[2].verdict == Verdict.TLE
 
-    def test_crawl_user_submissions_with_timestamp_filter(self):
+    @pytest.mark.asyncio
+    async def test_crawl_user_submissions_with_timestamp_filter(self):
         submissions_data = [
             make_dmoj_submission(
                 submission_id=100,
@@ -186,12 +189,13 @@ class TestDmojJudge:
 
         # Filter to only get submissions after 2025-01-27T12:00:00
         from_timestamp = datetime(2025, 1, 27, 12, 0, 0, tzinfo=timezone.utc)
-        submissions = judge.crawl_user_submissions(user_judge, from_timestamp)
+        submissions = await judge.crawl_user_submissions(user_judge, from_timestamp)
 
         assert len(submissions) == 1
         assert submissions[0].submission_id == "101"
 
-    def test_crawl_user_submissions_empty(self):
+    @pytest.mark.asyncio
+    async def test_crawl_user_submissions_empty(self):
         response = {
             "data": {
                 "objects": [],
@@ -203,7 +207,7 @@ class TestDmojJudge:
         user_judge = make_user_judge()
 
         from_timestamp = datetime.fromtimestamp(0, tz=timezone.utc)
-        submissions = judge.crawl_user_submissions(user_judge, from_timestamp)
+        submissions = await judge.crawl_user_submissions(user_judge, from_timestamp)
 
         assert len(submissions) == 0
 
@@ -224,7 +228,8 @@ class TestDmojJudge:
         for dmoj_verdict, expected_verdict in test_cases:
             assert DMOJ_VERDICT_MAP.get(dmoj_verdict) == expected_verdict
 
-    def test_crawl_user_submissions_verdict_filtering(self):
+    @pytest.mark.asyncio
+    async def test_crawl_user_submissions_verdict_filtering(self):
         """Test that unknown verdicts are skipped"""
         submissions_data = [
             make_dmoj_submission(
@@ -252,7 +257,7 @@ class TestDmojJudge:
         user_judge = make_user_judge()
 
         from_timestamp = datetime.fromtimestamp(0, tz=timezone.utc)
-        submissions = judge.crawl_user_submissions(user_judge, from_timestamp)
+        submissions = await judge.crawl_user_submissions(user_judge, from_timestamp)
 
         # Only the AC submission should be returned
         assert len(submissions) == 1

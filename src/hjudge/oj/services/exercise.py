@@ -5,7 +5,7 @@ from hjudge.oj.models.judges import Exercise, JudgeEnum
 from hjudge.oj.models.judges.factory import JudgeFactory
 
 
-def check_exercise_existence(
+async def check_exercise_existence(
     judge_name: JudgeEnum,
     exercise_code: str,
     judge_factory: JudgeFactory,
@@ -27,7 +27,10 @@ def check_exercise_existence(
         # otherwise, try crawling
         judge = judge_factory.create_from(judge_name)
         config = judge.get_batch_config(from_exercise=exercise_code)
-        result_models = judge.crawl_exercises_batch(**config)
+
+        # Use async context manager for browser lifecycle
+        async with judge:
+            result_models = await judge.crawl_exercises_batch(**config)
         repository.add_exercises(
             [ExerciseEntity.from_model(model) for model in result_models]
         )

@@ -13,7 +13,7 @@ from hjudge.oj.models.judges import (
     UserJudge,
 )
 from hjudge.oj.models.submission import Submission, Verdict
-from hjudge.oj.services.browser import SyncBrowserCrawler
+from hjudge.oj.services.browser import AsyncBrowserCrawler
 
 # Mapping from AtCoder verdicts to our Verdict enum
 ATCODER_VERDICT_MAP = {
@@ -81,22 +81,31 @@ class AtcoderJudge(AbstractJudge):
 
     AtCoder's unofficial API is currently Forbidden, so we use browser
     automation to scrape submission pages.
+
+    This is an async context manager - the browser is initialized once
+    and reused for all requests during the context.
     """
 
     BASE_URL = "https://atcoder.jp"
 
     __cached: dict[str, List[Exercise]] = {}
-    __browser: SyncBrowserCrawler | None = None
+    _browser: AsyncBrowserCrawler | None = None
 
     @property
     def cached(self) -> dict[str, List[Exercise]]:
         return AtcoderJudge.__cached
 
-    def _get_browser(self) -> SyncBrowserCrawler:
-        """Get or create the browser crawler."""
-        if AtcoderJudge.__browser is None:
-            AtcoderJudge.__browser = SyncBrowserCrawler(headless=True)
-        return AtcoderJudge.__browser
+    async def __aenter__(self) -> Self:
+        """Initialize browser for this context."""
+        self._browser = AsyncBrowserCrawler(headless=True)
+        await self._browser.__aenter__()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+        """Close browser when context ends."""
+        if self._browser:
+            await self._browser.__aexit__(exc_type, exc_val, exc_tb)
+        return None
 
     @override
     def get_batch_config(self, from_exercise: str) -> dict[str, Any]:
@@ -110,7 +119,7 @@ class AtcoderJudge(AbstractJudge):
         return f"{self.BASE_URL}/contests/{contest}/tasks/{contest}_{problem}"
 
     @override
-    def crawl_exercises_batch(self, url: str, **kwargs) -> Iterable[Exercise]:
+    async def crawl_exercises_batch(self, url: str, **kwargs) -> Iterable[Exercise]:
         """Fetch exercise info from AtCoder problem page.
 
         Note: This is a simplified implementation. In practice, you might
@@ -129,9 +138,10 @@ class AtcoderJudge(AbstractJudge):
 
         try:
             # Use browser to fetch problem page
-            browser = self._get_browser()
+            if self._browser is None:
+                raise RuntimeError("Browser not initialized. Use async context manager.")
             exercise_url = self.get_exercise_url(cache_key)
-            html_content = browser.get_page_content(exercise_url, wait_for="h2")
+            html_content = await self._browser.get_page_content(exercise_url, wait_for="h2")
 
             # Parse title from HTML
             soup = BeautifulSoup(html_content, "html.parser")
@@ -159,7 +169,7 @@ class AtcoderJudge(AbstractJudge):
         return f"{self.BASE_URL}/contests/{contest}/submissions/{submission_id}"
 
     @override
-    def crawl_user_submissions(
+    async def crawl_user_submissions(
         self, user_judge: UserJudge, from_timestamp: datetime
     ) -> list[Submission]:
         """Crawl submissions for an AtCoder user after the given timestamp.
@@ -170,7 +180,8 @@ class AtcoderJudge(AbstractJudge):
         submissions = []
 
         try:
-            browser = self._get_browser()
+            if self._browser is None:
+                raise RuntimeError("Browser not initialized. Use async context manager.")
 
             # AtCoder has a global submissions page for a user across contests
             # However, we need to iterate through contests the user participated in
@@ -178,7 +189,7 @@ class AtcoderJudge(AbstractJudge):
             # which shows submissions across all contests
             url = f"{self.BASE_URL}/submissions?f.User={user_judge.handle}"
 
-            html_content = browser.get_page_content(url, wait_for="table")
+            html_content = await self._browser.get_page_content(url, wait_for="table")
 
             soup = BeautifulSoup(html_content, "html.parser")
 
