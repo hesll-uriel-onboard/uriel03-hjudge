@@ -13,7 +13,7 @@ from hjudge.oj.models.judges import (
     UserJudge,
 )
 from hjudge.oj.models.submission import Submission, Verdict
-from hjudge.oj.services.browser import AsyncBrowserCrawler
+from hjudge.oj.services.browser import FlareSolverrCrawler
 
 # Mapping from AtCoder verdicts to our Verdict enum
 ATCODER_VERDICT_MAP = {
@@ -79,8 +79,8 @@ class AtcoderExercise(Exercise):
 class AtcoderJudge(AbstractJudge):
     """AtCoder judge implementation using browser automation.
 
-    AtCoder's unofficial API is currently Forbidden, so we use browser
-    automation to scrape submission pages.
+    AtCoder's unofficial API is currently Forbidden, so we use FlareSolverr
+    to scrape submission pages.
 
     This is an async context manager - the browser is initialized once
     and reused for all requests during the context.
@@ -89,15 +89,15 @@ class AtcoderJudge(AbstractJudge):
     BASE_URL = "https://atcoder.jp"
 
     __cached: dict[str, List[Exercise]] = {}
-    _browser: AsyncBrowserCrawler | None = None
+    _browser: FlareSolverrCrawler | None = None
 
     @property
     def cached(self) -> dict[str, List[Exercise]]:
         return AtcoderJudge.__cached
 
     async def __aenter__(self) -> Self:
-        """Initialize browser for this context."""
-        self._browser = AsyncBrowserCrawler(headless=True)
+        """Initialize FlareSolverr for this context."""
+        self._browser = FlareSolverrCrawler()
         await self._browser.__aenter__()
         return self
 
@@ -119,7 +119,7 @@ class AtcoderJudge(AbstractJudge):
         return f"{self.BASE_URL}/contests/{contest}/tasks/{contest}_{problem}"
 
     @override
-    async def crawl_exercises_batch(self, url: str, **kwargs) -> Iterable[Exercise]:
+    async def crawl_exercises_batch(self, **kwargs) -> Iterable[Exercise]:
         """Fetch exercise info from AtCoder problem page.
 
         Note: This is a simplified implementation. In practice, you might
@@ -143,10 +143,32 @@ class AtcoderJudge(AbstractJudge):
             exercise_url = self.get_exercise_url(cache_key)
             html_content = await self._browser.get_page_content(exercise_url, wait_for="h2")
 
-            # Parse title from HTML
+            # Parse title from HTML - try multiple selectors
             soup = BeautifulSoup(html_content, "html.parser")
-            title_elem = soup.find("h2")
-            title = title_elem.get_text(strip=True) if title_elem else ""
+            title = ""
+
+            # Try h2 with class first
+            title_elem = soup.find("h2", class_="task-title")
+            if title_elem:
+                title = title_elem.get_text(strip=True)
+            else:
+                # Try span with class h2 inside header
+                title_elem = soup.select_one("header span.h2")
+                if title_elem:
+                    title = title_elem.get_text(strip=True)
+                else:
+                    # Try any h2
+                    title_elem = soup.find("h2")
+                    if title_elem:
+                        title = title_elem.get_text(strip=True)
+                    else:
+                        # Try title tag
+                        title_elem = soup.find("title")
+                        if title_elem:
+                            # AtCoder title format: "A - Problem Name - AtCoder"
+                            parts = title_elem.get_text(strip=True).split(" - ")
+                            if len(parts) >= 2:
+                                title = parts[1]
 
             exercise = AtcoderExercise(code=cache_key, title=title)
             self.cached[cache_key] = [exercise]

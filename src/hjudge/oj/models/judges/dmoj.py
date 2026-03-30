@@ -84,7 +84,7 @@ class DmojJudge(AbstractJudge):
         return f"{self.BASE_URL}/problem/{code}"
 
     @override
-    async def crawl_exercises_batch(self, url: str, **kwargs) -> Iterable[Exercise]:
+    async def crawl_exercises_batch(self, **kwargs) -> Iterable[Exercise]:
         """Fetch a single problem from DMOJ API.
 
         DMOJ doesn't have a batch endpoint for problems, so we fetch individually.
@@ -160,7 +160,9 @@ class DmojJudge(AbstractJudge):
                         # Parse ISO 8601 format: 2014-03-29T00:35:48+00:00
                         submitted_at = datetime.fromisoformat(date_str)
                         if submitted_at.tzinfo is None:
-                            submitted_at = submitted_at.replace(tzinfo=timezone.utc)
+                            submitted_at = submitted_at.replace(
+                                tzinfo=timezone.utc
+                            )
                     except ValueError:
                         continue
 
@@ -179,11 +181,34 @@ class DmojJudge(AbstractJudge):
                     if not problem_code:
                         continue
 
+                    # Fetch problem title if not cached
+                    problem_title = ""
+                    cached_exercise = self.cached.get(problem_code)
+                    if cached_exercise:
+                        problem_title = cached_exercise[0].title
+                    else:
+                        # Try to fetch problem info from API
+                        try:
+                            problem_url = (
+                                f"{self.API_URL}/problem/{problem_code}"
+                            )
+                            prob_response = self.crawler.get(problem_url)
+                            if prob_response.status_code == HTTP_200_OK:
+                                prob_data = JSONDecoder().decode(
+                                    prob_response.content.decode()
+                                )
+                                prob_object = prob_data.get("data", {}).get(
+                                    "object", {}
+                                )
+                                problem_title = prob_object.get("name", "")
+                        except Exception:
+                            pass
+
                     # Create exercise
                     exercise = Exercise(
                         judge=JudgeEnum.DMOJ,
                         code=problem_code,
-                        title="",  # Title not included in submission response
+                        title=problem_title,
                     )
 
                     # Create submission

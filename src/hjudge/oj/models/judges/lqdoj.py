@@ -111,8 +111,27 @@ class LqdojJudge(AbstractJudge):
             )
 
             soup = BeautifulSoup(html_content, "html.parser")
+            title = ""
+
+            # Try h2 with class title-row first
             title_elem = soup.find("h2", class_="title-row")
-            title = title_elem.get_text(strip=True) if title_elem else ""
+            if title_elem:
+                title = title_elem.get_text(strip=True)
+            else:
+                # Try any h2
+                title_elem = soup.find("h2")
+                if title_elem:
+                    title = title_elem.get_text(strip=True)
+                else:
+                    # Try title tag
+                    title_elem = soup.find("title")
+                    if title_elem:
+                        title = title_elem.get_text(strip=True)
+                        # Remove common suffixes
+                        for suffix in [" - LQDOJ", " | LQDOJ"]:
+                            if title.endswith(suffix):
+                                title = title[:-len(suffix)]
+                                break
 
             exercise = LqdojExercise(code=code, title=title)
             self.cached[code] = [exercise]
