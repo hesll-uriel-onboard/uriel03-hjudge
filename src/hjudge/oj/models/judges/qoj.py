@@ -12,7 +12,7 @@ from hjudge.oj.models.judges import (
     UserJudge,
 )
 from hjudge.oj.models.submission import Submission, Verdict
-from hjudge.oj.services.browser import FlareSolverrCrawler
+from hjudge.oj.services.browser import AsyncBrowserCrawler
 
 # Mapping from QOJ verdicts to our Verdict enum
 QOJ_VERDICT_MAP = {
@@ -61,7 +61,8 @@ class QojExercise(Exercise):
 class QojJudge(AbstractJudge):
     """QOJ judge implementation using browser automation.
 
-    QOJ is behind Cloudflare protection, so we use FlareSolverr for bypass.
+    QOJ requires login to view submissions. We use Playwright with
+    playwright-stealth to bypass Cloudflare and login.
 
     This is an async context manager - the browser is initialized once
     and reused for all requests during the context.
@@ -70,15 +71,15 @@ class QojJudge(AbstractJudge):
     BASE_URL = "https://qoj.ac"
 
     __cached: dict[str, List[Exercise]] = {}
-    _browser: FlareSolverrCrawler | None = None
+    _browser: AsyncBrowserCrawler | None = None
 
     @property
     def cached(self) -> dict[str, List[Exercise]]:
         return QojJudge.__cached
 
     async def __aenter__(self) -> Self:
-        """Initialize FlareSolverr for Cloudflare bypass."""
-        self._browser = FlareSolverrCrawler()
+        """Initialize AsyncBrowserCrawler for Cloudflare bypass and login."""
+        self._browser = AsyncBrowserCrawler(headless=True, bypass_cloudflare=True)
         await self._browser.__aenter__()
         return self
 

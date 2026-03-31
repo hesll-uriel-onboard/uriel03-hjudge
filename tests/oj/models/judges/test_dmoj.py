@@ -104,7 +104,7 @@ class TestDmojJudge:
         mock_crawler = MockCrawler({"content": json.dumps(response)})
         judge = DmojJudge(mock_crawler)
 
-        exercises = list(await judge.crawl_exercises_batch("", code="aplusb"))
+        exercises = list(await judge.crawl_exercises_batch(code="aplusb"))
 
         assert len(exercises) == 1
         assert exercises[0].code == "aplusb"
