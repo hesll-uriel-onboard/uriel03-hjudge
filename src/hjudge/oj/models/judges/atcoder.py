@@ -2,18 +2,21 @@ import re
 from datetime import datetime, timezone
 from typing import Any, ClassVar, Iterable, List, Self, override
 
-from bs4 import BeautifulSoup
+import httpx
 
 from hjudge.oj.errors import AtcoderProblemNotFoundError, ExerciseNotFoundError
 from hjudge.oj.models.judges import (
-    AbstractCrawler,
     AbstractJudge,
+    AbstractCrawler,
     Exercise,
     JudgeEnum,
     UserJudge,
 )
 from hjudge.oj.models.submission import Submission, Verdict
-from hjudge.oj.services.browser import SyncBrowserCrawler
+
+# Kenkoooo API base URL for AtCoder
+KENKOOOO_API_URL = "https://kenkoooo.com/atcoder/atcoder-api/v3"
+KENKOOOO_RESOURCES_URL = "https://kenkoooo.com/atcoder/resources"
 
 # Mapping from AtCoder verdicts to our Verdict enum
 ATCODER_VERDICT_MAP = {
@@ -26,6 +29,76 @@ ATCODER_VERDICT_MAP = {
     "CE": Verdict.CE,
     "IE": Verdict.IE,  # Internal Error
 }
+
+
+class KenkooooCrawler(AbstractCrawler):
+    """Crawler for AtCoder using Kenkoooo's unofficial API.
+
+    The Kenkoooo API provides access to AtCoder submissions and problems
+    without requiring authentication or browser automation.
+    """
+
+    def __init__(self, timeout: int = 60):
+        self.timeout = timeout
+        self._client: httpx.AsyncClient | None = None
+
+    async def __aenter__(self) -> Self:
+        self._client = httpx.AsyncClient(timeout=self.timeout)
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+        if self._client:
+            await self._client.aclose()
+        return None
+
+    def get(self, url: str, *args, **kwargs):
+        """Synchronous get method for AbstractCrawler interface compatibility.
+
+        Note: This is not used by KenkooooCrawler which operates asynchronously.
+        """
+        if self._client:
+            return self._client.get(url, *args, **kwargs)
+        return httpx.get(url, timeout=self.timeout, *args, **kwargs)
+
+    async def get_user_submissions(
+        self, user: str, from_second: int = 0
+    ) -> list[dict]:
+        """Get submissions for a user from Kenkoooo API.
+
+        Args:
+            user: AtCoder username
+            from_second: Unix timestamp to filter submissions (only submissions after this time)
+
+        Returns:
+            List of submission objects from the API
+        """
+        if self._client is None:
+            raise RuntimeError("Client not initialized. Use async context manager.")
+
+        url = f"{KENKOOOO_API_URL}/user/submissions"
+        response = await self._client.get(url, params={"user": user, "from_second": from_second})
+
+        if response.status_code != 200:
+            return []
+
+        return response.json()
+
+    async def get_problem_list(self) -> list[dict]:
+        """Get all AtCoder problems from Kenkoooo resources.
+
+        Returns:
+            List of problem objects with id, contest_id, title, etc.
+        """
+        if self._client is None:
+            raise RuntimeError("Client not initialized. Use async context manager.")
+
+        url = f"{KENKOOOO_RESOURCES_URL}/problems.json"
+        response = await self._client.get(url)
+
+        if response.status_code != 200:
+            return []
+
+        return response.json()
 
 
 class AtcoderExercise(Exercise):
@@ -63,40 +136,85 @@ class AtcoderExercise(Exercise):
     def create_from(cls, data: dict, *args, **kwargs) -> Self:
         """Create AtcoderExercise from parsed data.
 
-        Expected data format:
+        Expected data format (from Kenkoooo API):
+        {
+            "id": "abc360_a",
+            "contest_id": "abc360",
+            "title": "A - A Simple Problem"
+        }
+        Or:
         {
             "contest": "abc360",
             "problem": "a",
             "name": "A - A Simple Problem"
         }
         """
-        contest = data[AtcoderExercise.CONTEST]
-        problem = data[AtcoderExercise.PROBLEM]
+        # Handle Kenkoooo API format
+        if "id" in data and "contest_id" in data:
+            return cls(code=data["id"], title=data.get("title", ""))
+
+        # Handle legacy format
+        contest = data.get(AtcoderExercise.CONTEST)
+        problem = data.get(AtcoderExercise.PROBLEM)
         name = data.get("name", "")
-        return cls(f"{contest}_{problem}", name)
+        if contest and problem:
+            return cls(f"{contest}_{problem}", name)
+
+        raise ExerciseNotFoundError
 
 
 class AtcoderJudge(AbstractJudge):
-    """AtCoder judge implementation using browser automation.
+    """AtCoder judge implementation using Kenkoooo's unofficial API.
 
-    AtCoder's unofficial API is currently Forbidden, so we use browser
-    automation to scrape submission pages.
+    This approach is much simpler and faster than browser automation,
+    and doesn't require handling Cloudflare protection or login.
+
+    Note: The crawler parameter is required by the AbstractJudge Protocol
+    but is not used since we use KenkooooCrawler internally.
     """
 
     BASE_URL = "https://atcoder.jp"
 
     __cached: dict[str, List[Exercise]] = {}
-    __browser: SyncBrowserCrawler | None = None
+    __problems_cache: dict[str, str] = {}  # problem_id -> title
+    _crawler: KenkooooCrawler | None = None
+
+    def __init__(self, crawler: AbstractCrawler = None):
+        """Initialize AtcoderJudge.
+
+        Args:
+            crawler: Required by Protocol but not used. We use KenkooooCrawler internally.
+        """
+        self.crawler = crawler
 
     @property
     def cached(self) -> dict[str, List[Exercise]]:
         return AtcoderJudge.__cached
 
-    def _get_browser(self) -> SyncBrowserCrawler:
-        """Get or create the browser crawler."""
-        if AtcoderJudge.__browser is None:
-            AtcoderJudge.__browser = SyncBrowserCrawler(headless=True)
-        return AtcoderJudge.__browser
+    async def __aenter__(self) -> Self:
+        """Initialize Kenkoooo crawler."""
+        self._crawler = KenkooooCrawler()
+        await self._crawler.__aenter__()
+
+        # Load problem list into cache
+        if not AtcoderJudge.__problems_cache:
+            try:
+                problems = await self._crawler.get_problem_list()
+                for p in problems:
+                    problem_id = p.get("id", "")
+                    title = p.get("title", "")
+                    if problem_id:
+                        AtcoderJudge.__problems_cache[problem_id] = title
+            except Exception:
+                pass
+
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+        """Close crawler when context ends."""
+        if self._crawler:
+            await self._crawler.__aexit__(exc_type, exc_val, exc_tb)
+        return None
 
     @override
     def get_batch_config(self, from_exercise: str) -> dict[str, Any]:
@@ -110,13 +228,8 @@ class AtcoderJudge(AbstractJudge):
         return f"{self.BASE_URL}/contests/{contest}/tasks/{contest}_{problem}"
 
     @override
-    def crawl_exercises_batch(self, url: str, **kwargs) -> Iterable[Exercise]:
-        """Fetch exercise info from AtCoder problem page.
-
-        Note: This is a simplified implementation. In practice, you might
-        want to cache exercises more aggressively since AtCoder requires
-        browser automation.
-        """
+    async def crawl_exercises_batch(self, **kwargs) -> Iterable[Exercise]:
+        """Fetch exercise info using cached problem data or Kenkoooo API."""
         contest = kwargs.get("contest")
         problem = kwargs.get("problem")
         if contest is None or problem is None:
@@ -127,23 +240,28 @@ class AtcoderJudge(AbstractJudge):
         if result is not None:
             return result
 
-        try:
-            # Use browser to fetch problem page
-            browser = self._get_browser()
-            exercise_url = self.get_exercise_url(cache_key)
-            html_content = browser.get_page_content(exercise_url, wait_for="h2")
+        # Try to get title from cache
+        title = AtcoderJudge.__problems_cache.get(cache_key, "")
 
-            # Parse title from HTML
-            soup = BeautifulSoup(html_content, "html.parser")
-            title_elem = soup.find("h2")
-            title = title_elem.get_text(strip=True) if title_elem else ""
+        # If not in cache, try to fetch problem list again
+        if not title and self._crawler:
+            try:
+                problems = await self._crawler.get_problem_list()
+                for p in problems:
+                    problem_id = p.get("id", "")
+                    problem_title = p.get("title", "")
+                    if problem_id:
+                        AtcoderJudge.__problems_cache[problem_id] = problem_title
+                title = AtcoderJudge.__problems_cache.get(cache_key, "")
+            except Exception:
+                pass
 
-            exercise = AtcoderExercise(code=cache_key, title=title)
-            self.cached[cache_key] = [exercise]
-            return [exercise]
-
-        except Exception:
+        if not title:
             raise AtcoderProblemNotFoundError
+
+        exercise = AtcoderExercise(code=cache_key, title=title)
+        self.cached[cache_key] = [exercise]
+        return [exercise]
 
     @override
     def get_submission_url(self, submission_id: str, **kwargs) -> str:
@@ -159,95 +277,68 @@ class AtcoderJudge(AbstractJudge):
         return f"{self.BASE_URL}/contests/{contest}/submissions/{submission_id}"
 
     @override
-    def crawl_user_submissions(
+    async def crawl_user_submissions(
         self, user_judge: UserJudge, from_timestamp: datetime
     ) -> list[Submission]:
-        """Crawl submissions for an AtCoder user after the given timestamp.
+        """Crawl submissions for an AtCoder user using Kenkoooo API.
 
-        Uses browser automation to scrape the submissions page.
-        URL: https://atcoder.jp/contests/{contest}/submissions?f.User={user}
+        Args:
+            user_judge: UserJudge with handle (AtCoder username)
+            from_timestamp: Only fetch submissions after this timestamp
+
+        Returns:
+            List of Submission objects
         """
         submissions = []
 
+        if self._crawler is None:
+            return submissions
+
         try:
-            browser = self._get_browser()
+            # Convert timestamp to epoch seconds for API
+            from_second = int(from_timestamp.timestamp())
 
-            # AtCoder has a global submissions page for a user across contests
-            # However, we need to iterate through contests the user participated in
-            # For simplicity, we'll crawl the recent submissions page
-            # which shows submissions across all contests
-            url = f"{self.BASE_URL}/submissions?f.User={user_judge.handle}"
+            # Fetch submissions from Kenkoooo API
+            api_submissions = await self._crawler.get_user_submissions(
+                user=user_judge.handle, from_second=from_second
+            )
 
-            html_content = browser.get_page_content(url, wait_for="table")
-
-            soup = BeautifulSoup(html_content, "html.parser")
-
-            # Find the submissions table
-            table = soup.find("table", class_="table")
-            if not table:
-                return submissions
-
-            tbody = table.find("tbody")
-            if not tbody:
-                return submissions
-
-            rows = tbody.find_all("tr")
-
-            for row in rows:
+            for sub in api_submissions:
                 try:
-                    cells = row.find_all("td")
-                    if len(cells) < 8:
-                        continue
-
                     # Parse submission time
-                    time_cell = cells[0]
-                    time_text = time_cell.get_text(strip=True)
-                    submitted_at = self._parse_atcoder_time(time_text)
+                    epoch_second = sub.get("epoch_second", 0)
+                    submitted_at = datetime.fromtimestamp(epoch_second, tz=timezone.utc)
 
-                    if submitted_at is None or submitted_at <= from_timestamp:
+                    if submitted_at <= from_timestamp:
                         continue
 
-                    # Parse problem code from link
-                    problem_link = cells[1].find("a")
-                    if not problem_link:
+                    # Parse problem code
+                    problem_id = sub.get("problem_id", "")
+                    contest_id = sub.get("contest_id", "")
+                    if not problem_id:
                         continue
 
-                    problem_href = problem_link.get("href", "")
-                    # Extract contest and problem from URL like /contests/abc360/tasks/abc360_a
-                    match = re.search(r"/contests/([^/]+)/tasks/([^/]+)", problem_href)
-                    if not match:
-                        continue
-
-                    contest = match.group(1)
-                    problem_full = match.group(2)
-                    # Problem code is usually {contest}_{problem_letter}
-                    problem_letter = problem_full.replace(f"{contest}_", "")
-                    code = f"{contest}_{problem_letter}"
+                    # Get title from cache
+                    title = AtcoderJudge.__problems_cache.get(problem_id, "")
 
                     # Parse verdict
-                    verdict_cell = cells[6]  # Status column
-                    verdict_text = verdict_cell.get_text(strip=True)
-                    verdict = ATCODER_VERDICT_MAP.get(verdict_text)
+                    result = sub.get("result", "")
+                    verdict = ATCODER_VERDICT_MAP.get(result)
                     if verdict is None:
-                        continue
+                        continue  # Skip unknown verdicts
 
-                    # Parse submission ID from link
-                    submission_link = cells[9].find("a") if len(cells) > 9 else None
-                    submission_id = ""
-                    if submission_link:
-                        submission_href = submission_link.get("href", "")
-                        match = re.search(r"/submissions/(\d+)", submission_href)
-                        if match:
-                            submission_id = match.group(1)
+                    # Parse submission ID
+                    submission_id = str(sub.get("id", ""))
 
-                    # Get problem title
-                    problem_title = problem_link.get_text(strip=True)
+                    # Parse points - normalize to 100 scale
+                    # AtCoder uses varying points (100-2000), but we normalize to 100 for consistency
+                    points = 100 if verdict == Verdict.AC else 0
 
                     # Create exercise
                     exercise = Exercise(
                         judge=JudgeEnum.ATCODER,
-                        code=code,
-                        title=problem_title,
+                        code=problem_id,
+                        title=title,
                     )
 
                     # Create submission
@@ -258,7 +349,7 @@ class AtcoderJudge(AbstractJudge):
                         submission_id=submission_id,
                         submitted_at=submitted_at,
                         content="",
-                        points=100 if verdict == Verdict.AC else 0,
+                        points=int(points) if points else 0,
                     )
                     submissions.append(submission)
 
@@ -269,30 +360,3 @@ class AtcoderJudge(AbstractJudge):
 
         except Exception:
             return submissions
-
-    def _parse_atcoder_time(self, time_str: str) -> datetime | None:
-        """Parse AtCoder submission time string.
-
-        Format: YYYY-MM-DD HH:MM:SS+TTTT (e.g., 2024-06-02 21:00:00+0900)
-        """
-        try:
-            # Handle timezone offset format
-            # AtCoder uses +0900 format (JST)
-            if "+" in time_str:
-                dt_part, tz_part = time_str.rsplit("+", 1)
-                dt = datetime.strptime(dt_part.strip(), "%Y-%m-%d %H:%M:%S")
-                # Parse timezone offset
-                tz_hours = int(tz_part[:2])
-                tz_mins = int(tz_part[2:])
-                from datetime import timedelta
-
-                offset = timedelta(hours=tz_hours, minutes=tz_mins)
-                dt = dt.replace(tzinfo=timezone(offset))
-                return dt.astimezone(timezone.utc)
-            else:
-                # No timezone, assume UTC
-                return datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S").replace(
-                    tzinfo=timezone.utc
-                )
-        except ValueError:
-            return None

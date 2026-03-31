@@ -62,7 +62,8 @@ def make_user_judge(handle: str = "testuser") -> UserJudge:
     )
 
 
-def test_crawl_user_submissions():
+@pytest.mark.asyncio
+async def test_crawl_user_submissions():
     # with - mock response with submissions
     submissions_data = [
         make_cf_submission(
@@ -101,7 +102,7 @@ def test_crawl_user_submissions():
 
     # act
     from_timestamp = datetime.fromtimestamp(0, tz=timezone.utc)
-    submissions = judge.crawl_user_submissions(user_judge, from_timestamp)
+    submissions = await judge.crawl_user_submissions(user_judge, from_timestamp)
 
     # assert
     assert len(submissions) == 3
@@ -125,7 +126,8 @@ def test_crawl_user_submissions():
     assert submissions[2].points == 0
 
 
-def test_crawl_user_submissions_with_timestamp_filter():
+@pytest.mark.asyncio
+async def test_crawl_user_submissions_with_timestamp_filter():
     # with
     submissions_data = [
         make_cf_submission(
@@ -156,14 +158,15 @@ def test_crawl_user_submissions_with_timestamp_filter():
 
     # act - only get submissions after first one
     from_timestamp = datetime.fromtimestamp(1738001000, tz=timezone.utc)
-    submissions = judge.crawl_user_submissions(user_judge, from_timestamp)
+    submissions = await judge.crawl_user_submissions(user_judge, from_timestamp)
 
     # assert - should only get the second one
     assert len(submissions) == 1
     assert submissions[0].submission_id == "101"
 
 
-def test_crawl_user_submissions_empty():
+@pytest.mark.asyncio
+async def test_crawl_user_submissions_empty():
     # with - empty response
     import json
 
@@ -175,13 +178,14 @@ def test_crawl_user_submissions_empty():
 
     # act
     from_timestamp = datetime.fromtimestamp(0, tz=timezone.utc)
-    submissions = judge.crawl_user_submissions(user_judge, from_timestamp)
+    submissions = await judge.crawl_user_submissions(user_judge, from_timestamp)
 
     # assert
     assert len(submissions) == 0
 
 
-def test_crawl_user_submissions_verdict_mapping():
+@pytest.mark.asyncio
+async def test_crawl_user_submissions_verdict_mapping():
     """Test that CF verdicts map correctly to our Verdict enum"""
     test_cases = [
         ("OK", Verdict.AC),
@@ -210,7 +214,7 @@ def test_crawl_user_submissions_verdict_mapping():
 
         judge = CodeforcesJudge(mock_crawler)
         user_judge = make_user_judge()
-        submissions = judge.crawl_user_submissions(user_judge, datetime.fromtimestamp(0, tz=timezone.utc))
+        submissions = await judge.crawl_user_submissions(user_judge, datetime.fromtimestamp(0, tz=timezone.utc))
 
         assert len(submissions) == 1
         assert submissions[0].verdict == expected_verdict, f"CF verdict {cf_verdict} should map to {expected_verdict}"
@@ -226,7 +230,8 @@ def test_get_submission_url():
     assert "123456789" in url
 
 
-def test_crawl_user_submissions_extracts_points():
+@pytest.mark.asyncio
+async def test_crawl_user_submissions_extracts_points():
     """Test that points are extracted from Codeforces API response"""
     import json
 
@@ -257,7 +262,7 @@ def test_crawl_user_submissions_extracts_points():
 
     # act
     from_timestamp = datetime.fromtimestamp(0, tz=timezone.utc)
-    submissions = judge.crawl_user_submissions(user_judge, from_timestamp)
+    submissions = await judge.crawl_user_submissions(user_judge, from_timestamp)
 
     # assert
     assert len(submissions) == 2
@@ -265,7 +270,8 @@ def test_crawl_user_submissions_extracts_points():
     assert submissions[1].points == 50
 
 
-def test_crawl_user_submissions_default_points_for_ac():
+@pytest.mark.asyncio
+async def test_crawl_user_submissions_default_points_for_ac():
     """Test that AC submissions without points default to 100"""
     import json
 
@@ -289,7 +295,7 @@ def test_crawl_user_submissions_default_points_for_ac():
 
     # act
     from_timestamp = datetime.fromtimestamp(0, tz=timezone.utc)
-    submissions = judge.crawl_user_submissions(user_judge, from_timestamp)
+    submissions = await judge.crawl_user_submissions(user_judge, from_timestamp)
 
     # assert - AC without points should default to 100
     assert len(submissions) == 1
@@ -297,7 +303,8 @@ def test_crawl_user_submissions_default_points_for_ac():
     assert submissions[0].points == 100
 
 
-def test_crawl_user_submissions_zero_points_for_non_ac():
+@pytest.mark.asyncio
+async def test_crawl_user_submissions_zero_points_for_non_ac():
     """Test that non-AC submissions without points default to 0"""
     import json
 
@@ -321,7 +328,7 @@ def test_crawl_user_submissions_zero_points_for_non_ac():
 
     # act
     from_timestamp = datetime.fromtimestamp(0, tz=timezone.utc)
-    submissions = judge.crawl_user_submissions(user_judge, from_timestamp)
+    submissions = await judge.crawl_user_submissions(user_judge, from_timestamp)
 
     # assert - non-AC without points should default to 0
     assert len(submissions) == 1

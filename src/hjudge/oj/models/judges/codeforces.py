@@ -9,6 +9,7 @@ from hjudge.oj.errors import (
     ExerciseNotFoundError,
 )
 from hjudge.oj.models.judges import (
+    AbstractCrawler,
     AbstractJudge,
     Exercise,
     JudgeEnum,
@@ -62,11 +63,25 @@ class CodeforcesExercise(Exercise):
 
 
 class CodeforcesJudge(AbstractJudge):
+    """Codeforces judge implementation using REST API.
+
+    This is an async context manager for interface consistency with
+    browser-based judges, but doesn't use browser automation.
+    """
+
     __cached: dict[str, List[Exercise]] = {}
 
     @property
     def cached(self) -> dict[str, List[Exercise]]:
         return CodeforcesJudge.__cached
+
+    async def __aenter__(self) -> Self:
+        """No-op context entry (HTTP-based, no browser needed)."""
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+        """No-op context exit."""
+        return None
 
     @override
     def get_batch_config(self, from_exercise: str) -> dict[str, Any]:
@@ -82,7 +97,7 @@ class CodeforcesJudge(AbstractJudge):
         return f"https://codeforces.com/problemset/problem/{contest}/{problem}"
 
     @override
-    def crawl_exercises_batch(self, url: str, **kwargs) -> Iterable[Exercise]:
+    async def crawl_exercises_batch(self, url: str, **kwargs) -> Iterable[Exercise]:
         contest_id = kwargs.get("contest")
         if contest_id is None:
             raise CodeforcesContestNotFoundError
@@ -125,7 +140,7 @@ class CodeforcesJudge(AbstractJudge):
         return f"https://codeforces.com/contest/{contest}/submission/{submission_id}"
 
     @override
-    def crawl_user_submissions(
+    async def crawl_user_submissions(
         self, user_judge: UserJudge, from_timestamp: datetime
     ) -> list[Submission]:
         """Crawl submissions for a Codeforces user after the given timestamp.

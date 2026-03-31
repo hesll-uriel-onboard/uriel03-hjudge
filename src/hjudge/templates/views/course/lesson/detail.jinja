@@ -151,6 +151,7 @@
 
     {% if (user is defined) and not(user == none) %}
     const USER_ID = "{{ user.id }}";
+    const exerciseSubmissions = {};  // Cache for loaded submissions
 
     async function loadSubmissionResults() {
         // Use batch API instead of N+1 queries
@@ -181,7 +182,7 @@
                                 exerciseSubmissions[exerciseId] = await resp.json();
                             }
                         }
-                        showSubmissionHistory(exerciseId);
+                        showSubmissionHistory(exerciseId, exerciseSubmissions[exerciseId]);
                     });
                 });
             }

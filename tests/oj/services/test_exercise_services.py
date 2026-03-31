@@ -10,6 +10,7 @@ from hjudge.commons.db.uow import AbstractUnitOfWork
 from hjudge.oj.db.entities.exercise import ExerciseEntity
 from hjudge.oj.db.repositories.exercise import AbstractExerciseRepository
 from hjudge.oj.models.judges import (
+    AbstractCrawler,
     AbstractJudge,
     DefaultCrawler,
     Exercise,
@@ -27,6 +28,17 @@ exercises_list = [
 
 
 class FakeJudge(AbstractJudge):
+    crawler: AbstractCrawler
+
+    def __init__(self, crawler: AbstractCrawler):
+        self.crawler = crawler
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        return None
+
     @override
     def get_batch_config(self, from_exercise: str) -> dict[str, Any]:
         return {}
@@ -36,7 +48,7 @@ class FakeJudge(AbstractJudge):
         return f"{code}"
 
     @override
-    def crawl_exercises_batch(self, url: str, **kwargs) -> List[Exercise]:
+    async def crawl_exercises_batch(self, url: str, **kwargs) -> List[Exercise]:
         return exercises_list
 
     @override
@@ -44,7 +56,7 @@ class FakeJudge(AbstractJudge):
         return f"https://example.com/submission/{submission_id}"
 
     @override
-    def crawl_user_submissions(
+    async def crawl_user_submissions(
         self, user_judge: UserJudge, from_timestamp: datetime
     ) -> list[Submission]:
         return []
@@ -113,10 +125,11 @@ def fake_uow() -> FakeUoW:
     return FakeUoW()
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     ["uow", "judge"], [(FakeUoW(), FakeJudge(DefaultCrawler()))]
 )
-def test_check_exercise_already_existed(
+async def test_check_exercise_already_existed(
     uow: AbstractUnitOfWork, judge: AbstractJudge
 ):
     # with existed problems
@@ -126,7 +139,7 @@ def test_check_exercise_already_existed(
         )  # pyright: ignore
         entities = [
             ExerciseEntity.from_model(model)
-            for model in judge.crawl_exercises_batch(url="123")
+            for model in await judge.crawl_exercises_batch(url="123")
         ]
         repo.add_exercises(entities)
         uow.commit()
@@ -134,23 +147,24 @@ def test_check_exercise_already_existed(
     # and
     existed = exercises_list[0]
     # act
-    result = services.check_exercise_existence(
+    result = await services.check_exercise_existence(
         existed.judge, existed.code, DEFAULT_JUDGE_FACTORY, uow
     )
     # assert
     assert result == existed
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     ["uow", "judge"], [(FakeUoW(), FakeJudge(DefaultCrawler()))]
 )
-def test_check_exercise_crawl_to_exist(
+async def test_check_exercise_crawl_to_exist(
     uow: AbstractUnitOfWork, judge: AbstractJudge
 ):
     # with
     existed = exercises_list[0]
     # act
-    result = services.check_exercise_existence(
+    result = await services.check_exercise_existence(
         existed.judge, existed.code, DEFAULT_JUDGE_FACTORY, uow
     )
     # assert
