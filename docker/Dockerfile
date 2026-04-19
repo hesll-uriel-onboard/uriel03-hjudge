@@ -1,8 +1,9 @@
-FROM astral/uv:python3.12-bookworm-slim
+FROM ghcr.io/astral-sh/uv:latest AS uv
+FROM python:3.12-bookworm-slim
 
-RUN apt update && apt install -y git gcc libpq-dev make curl
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.local/bin:$PATH"
+COPY --from=uv /uv /usr/local/bin/uv
+
+RUN apt update && apt install -y git gcc libpq-dev make
 RUN useradd -m hjudge
 WORKDIR /home/hjudge
 RUN git clone https://github.com/hesll-uriel-onboard/uriel03-hjudge.git tmp && mv tmp/* tmp/.* . 2>/dev/null || true && rm -rf tmp
