@@ -5,6 +5,13 @@ services:
     env_file: ../.creds/postgres.env
     ports:
       - 5432:5432
+  flare:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    restart: always
+    environment:
+      - LOG_LEVEL=info
+    ports:
+      - "8191:8191"
 
   hjudge:
     build: .
@@ -13,3 +20,4 @@ services:
     ports:
       - "8000:8000"
     env_file: ../.creds/.env
+  
