@@ -15,6 +15,7 @@ class JudgeEnum(StrEnum):
     DMOJ = "DMOJ"
     ATCODER = "ATCODER"
     QOJ = "QOJ"
+    LQDOJ = "LQDOJ"
 
 
 class Exercise(Base):
@@ -45,16 +46,24 @@ class DefaultCrawler(AbstractCrawler):
 
 
 class AbstractJudge(Protocol):
-    """An abstract interface of OJ's problem manager
+    """An abstract interface of OJ's problem manager.
 
-    Each judges shall have a mechanism to cached. This cached
-    shall be global, i.e. a static property of the OJ's class.
+    Each judge is an async context manager that manages browser lifecycle
+    (for browser-based judges) or provides no-op context (for HTTP-based judges).
+
+    All crawl methods are async for interface consistency.
     """
 
     crawler: AbstractCrawler
 
     def __init__(self, crawler: AbstractCrawler):
         self.crawler = crawler
+
+    async def __aenter__(self) -> Self:
+        ...
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+        ...
 
     @abc.abstractmethod
     def get_exercise_url(self, code: str) -> str:
@@ -65,7 +74,7 @@ class AbstractJudge(Protocol):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def crawl_exercises_batch(self, url: str, *args, **kwargs) -> Iterable[Exercise]:
+    async def crawl_exercises_batch(self, *args, **kwargs) -> Iterable[Exercise]:
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -79,7 +88,7 @@ class AbstractJudge(Protocol):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def crawl_user_submissions(
+    async def crawl_user_submissions(
         self, user_judge: "UserJudge", from_timestamp: datetime
     ) -> list["Submission"]:
         """Crawl submissions for a user after the given timestamp.

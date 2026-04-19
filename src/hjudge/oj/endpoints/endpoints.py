@@ -73,7 +73,7 @@ async def check_exercise_existence(
             judge_enum = JudgeEnum[query["judge"]]
         except Exception:
             raise JudgeNotExistedError
-        result = exercise_services.check_exercise_existence(
+        result = await exercise_services.check_exercise_existence(
             judge_enum, query["code"], judge_factory, uow_factory.create_uow()
         )
         if result is None:

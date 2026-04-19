@@ -12,7 +12,7 @@ from hjudge.oj.models.judges import (
     UserJudge,
 )
 from hjudge.oj.models.submission import Submission, Verdict
-from hjudge.oj.services.browser import SyncBrowserCrawler
+from hjudge.oj.services.browser import AsyncBrowserCrawler
 
 # Mapping from QOJ verdicts to our Verdict enum
 QOJ_VERDICT_MAP = {
@@ -61,24 +61,33 @@ class QojExercise(Exercise):
 class QojJudge(AbstractJudge):
     """QOJ judge implementation using browser automation.
 
-    QOJ is behind Cloudflare protection, so we use browser automation
-    to bypass it.
+    QOJ requires login to view submissions. We use Playwright with
+    playwright-stealth to bypass Cloudflare and login.
+
+    This is an async context manager - the browser is initialized once
+    and reused for all requests during the context.
     """
 
     BASE_URL = "https://qoj.ac"
 
     __cached: dict[str, List[Exercise]] = {}
-    __browser: SyncBrowserCrawler | None = None
+    _browser: AsyncBrowserCrawler | None = None
 
     @property
     def cached(self) -> dict[str, List[Exercise]]:
         return QojJudge.__cached
 
-    def _get_browser(self) -> SyncBrowserCrawler:
-        """Get or create the browser crawler."""
-        if QojJudge.__browser is None:
-            QojJudge.__browser = SyncBrowserCrawler(headless=True)
-        return QojJudge.__browser
+    async def __aenter__(self) -> Self:
+        """Initialize AsyncBrowserCrawler for Cloudflare bypass and login."""
+        self._browser = AsyncBrowserCrawler(headless=True, bypass_cloudflare=True)
+        await self._browser.__aenter__()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+        """Close browser when context ends."""
+        if self._browser:
+            await self._browser.__aexit__(exc_type, exc_val, exc_tb)
+        return None
 
     @override
     def get_batch_config(self, from_exercise: str) -> dict[str, Any]:
@@ -90,7 +99,7 @@ class QojJudge(AbstractJudge):
         return f"{self.BASE_URL}/problem/{code}"
 
     @override
-    def crawl_exercises_batch(self, url: str, **kwargs) -> Iterable[Exercise]:
+    async def crawl_exercises_batch(self, **kwargs) -> Iterable[Exercise]:
         """Fetch exercise info from QOJ problem page."""
         code = kwargs.get("code")
         if code is None:
@@ -101,14 +110,45 @@ class QojJudge(AbstractJudge):
             return result
 
         try:
-            browser = self._get_browser()
+            if self._browser is None:
+                raise RuntimeError(
+                    "Browser not initialized. Use async context manager."
+                )
             exercise_url = self.get_exercise_url(code)
-            html_content = browser.get_page_content(exercise_url, wait_for="h1")
+            html_content = await self._browser.get_page_content(
+                exercise_url, wait_for="h1"
+            )
 
-            # Parse title from HTML
+            # Parse title from HTML - try multiple selectors
             soup = BeautifulSoup(html_content, "html.parser")
-            title_elem = soup.find("h1")
-            title = title_elem.get_text(strip=True) if title_elem else ""
+            title = ""
+
+            # Try h1 with class page-header first
+            title_elem = soup.find("h1", class_="page-header")
+            if title_elem:
+                title = title_elem.get_text(strip=True)
+            else:
+                # Try any h1 with text-center
+                title_elem = soup.select_one("h1.page-header.text-center")
+                if title_elem:
+                    title = title_elem.get_text(strip=True)
+                else:
+                    # Try any h1
+                    title_elem = soup.find("h1")
+                    if title_elem:
+                        text = title_elem.get_text(strip=True)
+                        # Skip if it's just the site name
+                        if text and text not in ["QOJ.ac", "QOJ"]:
+                            title = text
+                        else:
+                            # Fallback to title tag
+                            title_elem = soup.find("title")
+                            if title_elem:
+                                title = title_elem.get_text(strip=True)
+                                for suffix in [" - QOJ", " | QOJ", " - QOJ.ac", " | QOJ.ac"]:
+                                    if title.endswith(suffix):
+                                        title = title[:-len(suffix)]
+                                        break
 
             exercise = QojExercise(code=code, title=title)
             self.cached[code] = [exercise]
@@ -122,7 +162,7 @@ class QojJudge(AbstractJudge):
         return f"{self.BASE_URL}/submission/{submission_id}"
 
     @override
-    def crawl_user_submissions(
+    async def crawl_user_submissions(
         self, user_judge: UserJudge, from_timestamp: datetime
     ) -> list[Submission]:
         """Crawl submissions for a QOJ user after the given timestamp.
@@ -134,12 +174,17 @@ class QojJudge(AbstractJudge):
         page = 1
 
         try:
-            browser = self._get_browser()
+            if self._browser is None:
+                raise RuntimeError(
+                    "Browser not initialized. Use async context manager."
+                )
 
             # QOJ paginates submissions
             while True:
                 url = f"{self.BASE_URL}/submissions?submitter={user_judge.handle}&page={page}"
-                html_content = browser.get_page_content(url, wait_for="table")
+                html_content = await self._browser.get_page_content(
+                    url, wait_for="table"
+                )
 
                 soup = BeautifulSoup(html_content, "html.parser")
 

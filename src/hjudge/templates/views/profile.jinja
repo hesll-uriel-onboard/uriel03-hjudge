@@ -48,6 +48,13 @@
                     placeholder="Your QOJ handle"
                     class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none transition-all">
             </div>
+            <div class="flex items-center gap-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 w-32">LQDOJ:</label>
+                <input type="text" id="lqdojHandle"
+                    value="{% for uj in user_judges %}{% if uj.judge.value == 'LQDOJ' %}{{ uj.handle }}{% endif %}{% endfor %}"
+                    placeholder="Your LQDOJ handle"
+                    class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none transition-all">
+            </div>
         </div>
 
         <p id="msg" class="mt-4 text-sm hidden"></p>
@@ -73,6 +80,7 @@
     const dmojHandleInput = document.getElementById("dmojHandle");
     const atcoderHandleInput = document.getElementById("atcoderHandle");
     const qojHandleInput = document.getElementById("qojHandle");
+    const lqdojHandleInput = document.getElementById("lqdojHandle");
 
     function showMessage(message, isError = false) {
         msgEl.textContent = message;
@@ -95,6 +103,7 @@
         const dmojHandle = dmojHandleInput.value.trim();
         const atcoderHandle = atcoderHandleInput.value.trim();
         const qojHandle = qojHandleInput.value.trim();
+        const lqdojHandle = lqdojHandleInput.value.trim();
 
         // Build judges array
         const judges = [];
@@ -102,6 +111,7 @@
         if (dmojHandle) judges.push({ judge: "DMOJ", handle: dmojHandle });
         if (atcoderHandle) judges.push({ judge: "ATCODER", handle: atcoderHandle });
         if (qojHandle) judges.push({ judge: "QOJ", handle: qojHandle });
+        if (lqdojHandle) judges.push({ judge: "LQDOJ", handle: lqdojHandle });
 
         setLoading(true);
 
