@@ -37,7 +37,7 @@ if section is None or DATABASE_URL is None:
 # else:
 #     url = section[KEY].format(DB_USER, DB_PASS, DB_HOST, DB_NAME)
 section[KEY] = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-# print(url)
+# print(section[KEY])
 
 
 def run_migrations_offline() -> None:
