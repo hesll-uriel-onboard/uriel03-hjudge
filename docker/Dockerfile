@@ -1,6 +1,6 @@
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
 
-RUN apt update && apt install -y git gcc libpq-dev make
+RUN apt update && apt install -y git gcc libpq-dev make curl
 ENV PATH="/app/.local/bin:$PATH"
 RUN useradd -m hjudge
 WORKDIR /home/hjudge

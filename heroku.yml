@@ -5,12 +5,7 @@ build:
 
 release:
   image: web
-  command:
-    - uv
-    - run
-    - alembic
-    - upgrade
-    - head
+  command: "uv run alembic upgrade head"
 
 run:
   web: uv run litestar --app hjudge.app:app run --host 0.0.0.0 --port $PORT
