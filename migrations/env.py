@@ -23,20 +23,21 @@ target_metadata = None
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
-DB_USER = environ.get("DB_USER")
-DB_PASS = environ.get("DB_PASS")
-DB_HOST = environ.get("DB_HOST")
-DB_NAME = environ.get("DB_NAME")
+# DB_USER = environ.get("DB_USER")
+# DB_PASS = environ.get("DB_PASS")
+# DB_HOST = environ.get("DB_HOST")
+# DB_NAME = environ.get("DB_NAME")
+DATABASE_URL = environ.get("DATABASE_URL")
 KEY = "sqlalchemy.url"
 section = config.get_section(config.config_ini_section)
-if section is None:
+if section is None or DATABASE_URL is None:
     assert False
-if section.get(KEY) is None:
-    url = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}/{DB_NAME}"
-else:
-    url = section[KEY].format(DB_USER, DB_PASS, DB_HOST, DB_NAME)
-section[KEY] = url
-print(url)
+# if section.get(KEY) is None:
+#     url = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}/{DB_NAME}"
+# else:
+#     url = section[KEY].format(DB_USER, DB_PASS, DB_HOST, DB_NAME)
+section[KEY] = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+# print(url)
 
 
 def run_migrations_offline() -> None:
