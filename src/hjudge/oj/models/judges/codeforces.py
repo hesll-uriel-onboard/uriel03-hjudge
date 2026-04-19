@@ -1,35 +1,34 @@
 import string
 from datetime import datetime, timezone
-from json import JSONDecoder
 from typing import Any, ClassVar, Iterable, List, Self, override
 
-from hjudge.commons.endpoints.status_codes import HTTP_200_OK
+from bs4 import BeautifulSoup
+
 from hjudge.oj.errors import (
     CodeforcesContestNotFoundError,
     ExerciseNotFoundError,
 )
 from hjudge.oj.models.judges import (
-    AbstractCrawler,
     AbstractJudge,
     Exercise,
     JudgeEnum,
     UserJudge,
 )
 from hjudge.oj.models.submission import Submission, Verdict
+from hjudge.oj.services.browser import FlareSolverrCrawler
 
-# Mapping from Codeforces verdicts to our Verdict enum
 CF_VERDICT_MAP = {
-    "OK": Verdict.AC,
-    "WRONG_ANSWER": Verdict.WA,
-    "TIME_LIMIT_EXCEEDED": Verdict.TLE,
-    "MEMORY_LIMIT_EXCEEDED": Verdict.RTE,
-    "RUNTIME_ERROR": Verdict.RTE,
-    "COMPILATION_ERROR": Verdict.CE,
-    "CHALLENGED": Verdict.WA,
-    "SKIPPED": Verdict.WA,
-    "TESTING": None,  # Still being judged
-    "REJECTED": None,  # Rejected by judge
+    "Accepted": Verdict.AC,
+    "Wrong answer": Verdict.WA,
+    "Time limit exceeded": Verdict.TLE,
+    "Memory limit exceeded": Verdict.RTE,
+    "Runtime error": Verdict.RTE,
+    "Compilation error": Verdict.CE,
+    "Challenged": Verdict.WA,
+    "Skipped": Verdict.WA,
 }
+
+BASE_URL = "https://codeforces.com"
 
 
 class CodeforcesExercise(Exercise):
@@ -40,7 +39,6 @@ class CodeforcesExercise(Exercise):
     def __init__(self, code: str, title: str):
         code = code.upper()
         super().__init__(judge=JudgeEnum.CODEFORCES, code=code, title=title)
-        # self.contest, self.problem = CodeforcesExercise.parse(self.code)
 
     @staticmethod
     def parse(code: str) -> tuple[str, str]:
@@ -63,157 +61,163 @@ class CodeforcesExercise(Exercise):
 
 
 class CodeforcesJudge(AbstractJudge):
-    """Codeforces judge implementation using REST API.
-
-    This is an async context manager for interface consistency with
-    browser-based judges, but doesn't use browser automation.
-    """
-
     __cached: dict[str, List[Exercise]] = {}
+    _browser: FlareSolverrCrawler | None = None
 
     @property
     def cached(self) -> dict[str, List[Exercise]]:
         return CodeforcesJudge.__cached
 
     async def __aenter__(self) -> Self:
-        """No-op context entry (HTTP-based, no browser needed)."""
+        self._browser = FlareSolverrCrawler()
+        await self._browser.__aenter__()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
-        """No-op context exit."""
-        return None
+        if self._browser:
+            await self._browser.__aexit__(exc_type, exc_val, exc_tb)
 
     @override
     def get_batch_config(self, from_exercise: str) -> dict[str, Any]:
         contest, _ = CodeforcesExercise.parse(from_exercise)
         return {
             "contest": contest,
-            "url": f"https://codeforces.com/api/contest.standings?contestId={contest}",
+            "url": f"{BASE_URL}/contest/{contest}",
         }
 
     @override
     def get_exercise_url(self, code: str) -> str:
         contest, problem = CodeforcesExercise.parse(code)
-        return f"https://codeforces.com/problemset/problem/{contest}/{problem}"
+        return f"{BASE_URL}/problemset/problem/{contest}/{problem}"
 
     @override
     async def crawl_exercises_batch(self, url: str, **kwargs) -> Iterable[Exercise]:
-        contest_id = kwargs.get("contest")
-        if contest_id is None:
+        contest_id = str(kwargs.get("contest", ""))
+        if not contest_id:
             raise CodeforcesContestNotFoundError
-        contest_id = str(contest_id)
 
-        result = self.cached.get(contest_id)
-        if result is not None:
-            return result
+        cached = self.cached.get(contest_id)
+        if cached is not None:
+            return cached
 
-        result = []
+        if self._browser is None:
+            raise RuntimeError("Browser not initialized. Use async context manager.")
+
         try:
-            response = self.crawler.get(url)
-            if response.status_code != HTTP_200_OK:
+            html = await self._browser.get_page_content(url, wait_for="table.problems")
+            soup = BeautifulSoup(html, "html.parser")
+            table = soup.find("table", class_="problems")
+            if not table:
                 raise ExerciseNotFoundError
 
-            problems_info: list[dict] = JSONDecoder().decode(
-                response.content.decode()
-            )["result"]["problems"]
+            result = []
+            for row in table.find_all("tr")[1:]:  # skip header
+                cols = row.find_all("td")
+                if len(cols) < 2:
+                    continue
+                index = cols[0].get_text(strip=True)
+                title = cols[1].find("a")
+                if not title:
+                    continue
+                title = title.get_text(strip=True)
+                result.append(CodeforcesExercise(f"{contest_id}{index}", title))
 
-            for problem_info in problems_info:
-                exercise = CodeforcesExercise.create_from(data=problem_info)
-                result.append(exercise)
+            self.cached[contest_id] = result
+            return result
         except Exception:
             raise ExerciseNotFoundError
 
-        self.cached[contest_id] = result
-        return result
-
     @override
-    def get_submission_url(
-        self, submission_id: str, code: str, *args, **kwargs
-    ) -> str:
-        """Get the URL to view a Codeforces submission.
-
-        Args:
-            code: The exercise code (e.g., "1234A")
-            submission_id: The submission ID from Codeforces
-        """
-        contest, _ = CodeforcesExercise.parse(code)
-        return f"https://codeforces.com/contest/{contest}/submission/{submission_id}"
+    def get_submission_url(self, submission_id: str, code: str = "", *args, **kwargs) -> str:
+        if code:
+            contest, _ = CodeforcesExercise.parse(code)
+            return f"{BASE_URL}/contest/{contest}/submission/{submission_id}"
+        return f"{BASE_URL}/submissions/{submission_id}"
 
     @override
     async def crawl_user_submissions(
         self, user_judge: UserJudge, from_timestamp: datetime
     ) -> list[Submission]:
-        """Crawl submissions for a Codeforces user after the given timestamp.
+        if self._browser is None:
+            raise RuntimeError("Browser not initialized. Use async context manager.")
 
-        Uses the Codeforces API: https://codeforces.com/api/user.status
-        """
-        url = f"https://codeforces.com/api/user.status?handle={user_judge.handle}"
+        submissions = []
+        page = 1
 
-        try:
-            response = self.crawler.get(url)
-            if response.status_code != HTTP_200_OK:
-                return []
+        while True:
+            url = f"{BASE_URL}/submissions/{user_judge.handle}/page/{page}"
+            try:
+                html = await self._browser.get_page_content(url, wait_for="table.status-frame-datatable")
+            except Exception:
+                break
 
-            data = JSONDecoder().decode(response.content.decode())
-            if data.get("status") != "OK":
-                return []
+            soup = BeautifulSoup(html, "html.parser")
+            table = soup.find("table", class_="status-frame-datatable")
+            if not table:
+                break
 
-            submissions_data: list[dict] = data.get("result", [])
-            submissions = []
+            rows = table.find_all("tr")[1:]
+            if not rows:
+                break
 
-            for sub_data in submissions_data:
-                # Get submission time
-                time_seconds = sub_data.get("creationTimeSeconds", 0)
-                submitted_at = datetime.fromtimestamp(
-                    time_seconds, tz=timezone.utc
-                )
+            found_old = False
+            for row in rows:
+                try:
+                    cols = row.find_all("td")
+                    if len(cols) < 6:
+                        continue
 
-                # Skip if before from_timestamp
-                if submitted_at <= from_timestamp:
+                    submission_id = cols[0].get_text(strip=True)
+
+                    time_el = cols[1].find("span", attrs={"data-timestamp": True})
+                    if not time_el:
+                        continue
+                    ts = int(time_el["data-timestamp"])
+                    submitted_at = datetime.fromtimestamp(ts, tz=timezone.utc)
+
+                    if submitted_at <= from_timestamp:
+                        found_old = True
+                        continue
+
+                    problem_link = cols[3].find("a")
+                    if not problem_link:
+                        continue
+                    problem_title = problem_link.get_text(strip=True)
+                    href = problem_link.get("href", "")
+                    # href like /contest/1234/problem/A
+                    parts = href.strip("/").split("/")
+                    if len(parts) >= 4:
+                        contest_id = parts[1]
+                        index = parts[3]
+                        code = f"{contest_id}{index}"
+                    else:
+                        continue
+
+                    verdict_el = cols[5]
+                    verdict_text = verdict_el.get_text(strip=True)
+                    verdict = next(
+                        (v for k, v in CF_VERDICT_MAP.items() if verdict_text.startswith(k)),
+                        None,
+                    )
+                    if verdict is None:
+                        continue
+
+                    exercise = Exercise(judge=JudgeEnum.CODEFORCES, code=code, title=problem_title)
+                    submissions.append(Submission(
+                        exercise=exercise,
+                        user_id=user_judge.user_id,
+                        verdict=verdict,
+                        submission_id=submission_id,
+                        submitted_at=submitted_at,
+                        content="",
+                        points=100 if verdict == Verdict.AC else 0,
+                    ))
+                except Exception:
                     continue
 
-                # Get verdict
-                cf_verdict = sub_data.get("verdict", "")
-                verdict = CF_VERDICT_MAP.get(cf_verdict)
-                if verdict is None:
-                    continue  # Skip submissions without a valid verdict
+            if found_old or len(rows) < 50:
+                break
 
-                # Get points - default to 100 for AC, 0 otherwise
-                points = sub_data.get("points")
-                if points is None:
-                    points = 100 if verdict == Verdict.AC else 0
+            page += 1
 
-                # Get problem info
-                problem = sub_data.get("problem", {})
-                contest_id = problem.get("contestId")
-                index = problem.get("index", "")
-
-                if contest_id is None or not index:
-                    continue
-
-                code = f"{contest_id}{index}"
-                title = problem.get("name", "")
-
-                # Create exercise
-                exercise = Exercise(
-                    judge=JudgeEnum.CODEFORCES,
-                    code=code,
-                    title=title,
-                )
-
-                # Create submission with user_id from UserJudge
-                submission = Submission(
-                    exercise=exercise,
-                    user_id=user_judge.user_id,
-                    verdict=verdict,
-                    submission_id=str(sub_data.get("id", "")),
-                    submitted_at=submitted_at,
-                    content="",  # Codeforces API doesn't provide code in this endpoint
-                    points=points,
-                )
-                submissions.append(submission)
-
-            return submissions
-
-        except Exception:
-            return []
+        return submissions
