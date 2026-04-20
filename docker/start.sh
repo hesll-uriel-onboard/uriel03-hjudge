@@ -5,7 +5,7 @@ set -e
 WEB_PORT=${PORT:-8000}
 
 # Start FlareSolverr in background on 8191
-PORT=8191 node /app/dist/index.js &
+PORT=8191 /usr/bin/dumb-init -- /usr/local/bin/python -u /app/flaresolverr.py &
 
 echo "Waiting for FlareSolverr..."
 until curl -s http://localhost:8191/health > /dev/null; do
