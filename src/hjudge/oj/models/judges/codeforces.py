@@ -1,9 +1,11 @@
 import string
 from datetime import datetime, timezone
+from json import JSONDecoder
 from typing import Any, ClassVar, Iterable, List, Self, override
 
 from bs4 import BeautifulSoup
 
+from hjudge.commons.endpoints.status_codes import HTTP_200_OK
 from hjudge.oj.errors import (
     CodeforcesContestNotFoundError,
     ExerciseNotFoundError,
@@ -18,14 +20,14 @@ from hjudge.oj.models.submission import Submission, Verdict
 from hjudge.oj.services.browser import FlareSolverrCrawler
 
 CF_VERDICT_MAP = {
-    "Accepted": Verdict.AC,
-    "Wrong answer": Verdict.WA,
-    "Time limit exceeded": Verdict.TLE,
-    "Memory limit exceeded": Verdict.RTE,
-    "Runtime error": Verdict.RTE,
-    "Compilation error": Verdict.CE,
-    "Challenged": Verdict.WA,
-    "Skipped": Verdict.WA,
+    "OK": Verdict.AC,
+    "WRONG_ANSWER": Verdict.WA,
+    "TIME_LIMIT_EXCEEDED": Verdict.TLE,
+    "MEMORY_LIMIT_EXCEEDED": Verdict.RTE,
+    "RUNTIME_ERROR": Verdict.RTE,
+    "COMPILATION_ERROR": Verdict.CE,
+    "CHALLENGED": Verdict.WA,
+    "SKIPPED": Verdict.WA,
 }
 
 BASE_URL = "https://codeforces.com"
@@ -138,86 +140,63 @@ class CodeforcesJudge(AbstractJudge):
     async def crawl_user_submissions(
         self, user_judge: UserJudge, from_timestamp: datetime
     ) -> list[Submission]:
-        if self._browser is None:
-            raise RuntimeError("Browser not initialized. Use async context manager.")
+        url = f"https://codeforces.com/api/user.status?handle={user_judge.handle}"
 
-        submissions = []
-        page = 1
+        try:
+            response = self.crawler.get(url)
+            if response.status_code != HTTP_200_OK:
+                return []
 
-        while True:
-            url = f"{BASE_URL}/submissions/{user_judge.handle}/page/{page}"
-            try:
-                html = await self._browser.get_page_content(url, wait_for="table.status-frame-datatable")
-            except Exception:
-                break
+            data = JSONDecoder().decode(response.content.decode())
+            if data.get("status") != "OK":
+                return []
 
-            soup = BeautifulSoup(html, "html.parser")
-            table = soup.find("table", class_="status-frame-datatable")
-            if not table:
-                break
+            submissions_data: list[dict] = data.get("result", [])
+            submissions = []
 
-            rows = table.find_all("tr")[1:]
-            if not rows:
-                break
+            for sub_data in submissions_data:
+                time_seconds = sub_data.get("creationTimeSeconds", 0)
+                submitted_at = datetime.fromtimestamp(time_seconds, tz=timezone.utc)
 
-            found_old = False
-            for row in rows:
-                try:
-                    cols = row.find_all("td")
-                    if len(cols) < 6:
-                        continue
-
-                    submission_id = cols[0].get_text(strip=True)
-
-                    time_el = cols[1].find("span", attrs={"data-timestamp": True})
-                    if not time_el:
-                        continue
-                    ts = int(time_el["data-timestamp"])
-                    submitted_at = datetime.fromtimestamp(ts, tz=timezone.utc)
-
-                    if submitted_at <= from_timestamp:
-                        found_old = True
-                        continue
-
-                    problem_link = cols[3].find("a")
-                    if not problem_link:
-                        continue
-                    problem_title = problem_link.get_text(strip=True)
-                    href = problem_link.get("href", "")
-                    # href like /contest/1234/problem/A
-                    parts = href.strip("/").split("/")
-                    if len(parts) >= 4:
-                        contest_id = parts[1]
-                        index = parts[3]
-                        code = f"{contest_id}{index}"
-                    else:
-                        continue
-
-                    verdict_el = cols[5]
-                    verdict_text = verdict_el.get_text(strip=True)
-                    verdict = next(
-                        (v for k, v in CF_VERDICT_MAP.items() if verdict_text.startswith(k)),
-                        None,
-                    )
-                    if verdict is None:
-                        continue
-
-                    exercise = Exercise(judge=JudgeEnum.CODEFORCES, code=code, title=problem_title)
-                    submissions.append(Submission(
-                        exercise=exercise,
-                        user_id=user_judge.user_id,
-                        verdict=verdict,
-                        submission_id=submission_id,
-                        submitted_at=submitted_at,
-                        content="",
-                        points=100 if verdict == Verdict.AC else 0,
-                    ))
-                except Exception:
+                if submitted_at <= from_timestamp:
                     continue
 
-            if found_old or len(rows) < 50:
-                break
+                cf_verdict = sub_data.get("verdict", "")
+                verdict = CF_VERDICT_MAP.get(cf_verdict)
+                if verdict is None:
+                    continue
 
-            page += 1
+                points = sub_data.get("points")
+                if points is None:
+                    points = 100 if verdict == Verdict.AC else 0
 
-        return submissions
+                problem = sub_data.get("problem", {})
+                contest_id = problem.get("contestId")
+                index = problem.get("index", "")
+
+                if contest_id is None or not index:
+                    continue
+
+                code = f"{contest_id}{index}"
+                title = problem.get("name", "")
+
+                exercise = Exercise(
+                    judge=JudgeEnum.CODEFORCES,
+                    code=code,
+                    title=title,
+                )
+                submission = Submission(
+                    exercise=exercise,
+                    user_id=user_judge.user_id,
+                    verdict=verdict,
+                    submission_id=str(sub_data.get("id", "")),
+                    submitted_at=submitted_at,
+                    content="",
+                    points=points,
+                )
+                submissions.append(submission)
+
+            return submissions
+
+        except Exception:
+            return []
