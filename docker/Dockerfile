@@ -1,10 +1,16 @@
-FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+FROM ghcr.io/flaresolverr/flaresolverr:latest
 
-RUN apt update && apt install -y git gcc libpq-dev make curl
-ENV PATH="/app/.local/bin:$PATH"
+USER root
+RUN apt-get update && apt-get install -y git gcc libpq-dev make curl
+RUN curl -LsSf https://astral.sh/uv/install.sh | UV_INSTALL_DIR=/usr/local/bin sh
+
 RUN useradd -m hjudge
 WORKDIR /home/hjudge
 RUN git clone https://github.com/hesll-uriel-onboard/uriel03-hjudge.git tmp && mv tmp/* tmp/.* . 2>/dev/null || true && rm -rf tmp
 RUN uv sync
+
+COPY docker/start.sh /start.sh
+RUN chmod +x /start.sh
+
 EXPOSE 8000
-CMD [ "uv", "run", "litestar", "--app", "hjudge.app:app", "run", "--host", "0.0.0.0" ]
+CMD ["/start.sh"]

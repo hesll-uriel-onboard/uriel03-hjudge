@@ -1,7 +1,6 @@
 build:
   docker:
     web: docker/Dockerfile
-    flare: docker/Dockerfile.flaresolverr
 
 release:
   image: web
@@ -9,5 +8,4 @@ release:
     - "uv run alembic upgrade head"
 
 run:
-  web: uv run litestar --app hjudge.app:app run --host 0.0.0.0 --port $PORT
-  flare: flaresolverr
+  web: /start.sh

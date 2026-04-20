@@ -20,7 +20,7 @@ USER_AGENTS = [
 ]
 
 # Default FlareSolverr URL
-FLARESOLVERR_URL = "http://localhost:8191/v1"
+FLARESOLVERR_URL = os.getenv("FLARESOLVERR_URL", "http://localhost:8191/v1")
 
 # Credentials from environment
 QOJ_USERNAME = os.getenv("QOJ_USERNAME", "")
