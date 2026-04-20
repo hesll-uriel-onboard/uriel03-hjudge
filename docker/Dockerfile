@@ -9,7 +9,7 @@ WORKDIR /home/hjudge
 RUN git clone https://github.com/hesll-uriel-onboard/uriel03-hjudge.git tmp && mv tmp/* tmp/.* . 2>/dev/null || true && rm -rf tmp
 RUN uv sync
 
-COPY docker/start.sh /start.sh
+COPY start.sh /start.sh
 RUN chmod +x /start.sh
 
 EXPOSE 8000
