@@ -160,9 +160,11 @@ class FlareSolverrCrawler:
             return True
 
         try:
-            # QOJ uses a simple login form
+            import hashlib
+            import re
+
             async with httpx.AsyncClient(timeout=self.timeout / 1000) as client:
-                # Get login page first
+                # Get login page to extract the per-request _token from inline JS
                 response = await client.post(
                     self.flaresolverr_url,
                     json={
@@ -182,27 +184,21 @@ class FlareSolverrCrawler:
 
                 html = data["solution"]["response"]
 
-                # Extract CSRF token if needed
-                from bs4 import BeautifulSoup
-                import re
+                # QOJ embeds the _token in an inline script (not a form input)
+                match = re.search(r"_token\s*:\s*[\"']([^\"']+)[\"']", html)
+                token = match.group(1) if match else ""
 
-                soup = BeautifulSoup(html, "html.parser")
+                # QOJ AJAX login: password is MD5-hashed client-side
+                md5_password = hashlib.md5(QOJ_PASSWORD.encode()).hexdigest()
+                post_data = f"_token={token}&login=&username={QOJ_USERNAME}&password={md5_password}"
 
-                # Find form action and token
-                form = soup.find("form", action=re.compile(r"login"))
-                token = ""
-                token_input = soup.find("input", {"name": "_token"})
-                if token_input:
-                    token = token_input.get("value", "")
-
-                # Login via POST
                 login_response = await client.post(
                     self.flaresolverr_url,
                     json={
                         "cmd": "request.post",
                         "url": "https://qoj.ac/login",
                         "session": self._session,
-                        "postData": f"username={QOJ_USERNAME}&password={QOJ_PASSWORD}&_token={token}",
+                        "postData": post_data,
                         "maxTimeout": self.timeout,
                     },
                 )
@@ -210,8 +206,12 @@ class FlareSolverrCrawler:
                 if login_response.status_code == 200:
                     login_data = login_response.json()
                     if login_data.get("status") == "ok":
-                        self._logged_in_sites.add("qoj")
-                        return True
+                        from bs4 import BeautifulSoup
+                        raw = login_data.get("solution", {}).get("response", "")
+                        body_text = BeautifulSoup(raw, "html.parser").get_text(strip=True)
+                        if body_text == "ok":
+                            self._logged_in_sites.add("qoj")
+                            return True
 
         except Exception:
             pass
@@ -325,6 +325,10 @@ class AsyncBrowserCrawler:
 
         self._context = await self._browser.new_context(**context_options)
 
+        # Bootstrap Cloudflare clearance cookies via FlareSolverr
+        if self.bypass_cloudflare:
+            await self._bootstrap_cf_cookies()
+
         # Load cookies if available
         self._load_cookies()
 
@@ -336,6 +340,43 @@ class AsyncBrowserCrawler:
             await stealth.apply_stealth_async(self._page)
 
         return self
+
+    async def _bootstrap_cf_cookies(self) -> None:
+        """Fetch Cloudflare clearance cookies from FlareSolverr and inject into Playwright context."""
+        urls = ["https://qoj.ac/", "https://atcoder.jp/"]
+        try:
+            async with httpx.AsyncClient(timeout=90) as client:
+                await client.post(FLARESOLVERR_URL, json={"cmd": "sessions.create", "session": "cf_bootstrap"})
+                for url in urls:
+                    try:
+                        r = await client.post(FLARESOLVERR_URL, json={
+                            "cmd": "request.get",
+                            "url": url,
+                            "session": "cf_bootstrap",
+                            "maxTimeout": 60000,
+                        })
+                        data = r.json()
+                        if data.get("status") != "ok":
+                            continue
+                        raw_cookies = data.get("solution", {}).get("cookies", [])
+                        playwright_cookies = [
+                            {
+                                "name": c["name"],
+                                "value": c["value"],
+                                "domain": c["domain"],
+                                "path": c.get("path", "/"),
+                                "httpOnly": c.get("httpOnly", False),
+                                "secure": c.get("secure", False),
+                            }
+                            for c in raw_cookies
+                        ]
+                        if playwright_cookies:
+                            await self._context.add_cookies(playwright_cookies)
+                    except Exception:
+                        pass
+                await client.post(FLARESOLVERR_URL, json={"cmd": "sessions.destroy", "session": "cf_bootstrap"})
+        except Exception:
+            pass
 
     def _load_cookies(self) -> None:
         """Load cookies from file into browser context."""

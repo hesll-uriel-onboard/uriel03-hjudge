@@ -12,7 +12,7 @@ from hjudge.oj.models.judges import (
     UserJudge,
 )
 from hjudge.oj.models.submission import Submission, Verdict
-from hjudge.oj.services.browser import AsyncBrowserCrawler
+from hjudge.oj.services.browser import FlareSolverrCrawler
 
 # Mapping from QOJ verdicts to our Verdict enum
 QOJ_VERDICT_MAP = {
@@ -71,20 +71,18 @@ class QojJudge(AbstractJudge):
     BASE_URL = "https://qoj.ac"
 
     __cached: dict[str, List[Exercise]] = {}
-    _browser: AsyncBrowserCrawler | None = None
+    _browser: FlareSolverrCrawler | None = None
 
     @property
     def cached(self) -> dict[str, List[Exercise]]:
         return QojJudge.__cached
 
     async def __aenter__(self) -> Self:
-        """Initialize AsyncBrowserCrawler for Cloudflare bypass and login."""
-        self._browser = AsyncBrowserCrawler(headless=True, bypass_cloudflare=True)
+        self._browser = FlareSolverrCrawler()
         await self._browser.__aenter__()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
-        """Close browser when context ends."""
         if self._browser:
             await self._browser.__aexit__(exc_type, exc_val, exc_tb)
         return None
@@ -206,8 +204,11 @@ class QojJudge(AbstractJudge):
                 for row in rows:
                     try:
                         cells = row.find_all("td")
-                        if len(cells) < 6:
+                        if len(cells) < 9:
                             continue
+
+                        # QOJ columns: [0]id [1]problem [2]submitter [3]verdict
+                        #              [4]time [5]memory [6]lang [7]size [8]timestamp
 
                         # Parse submission ID from first cell link
                         first_link = cells[0].find("a")
@@ -219,9 +220,8 @@ class QojJudge(AbstractJudge):
                             continue
                         submission_id = match.group(1)
 
-                        # Parse submission time
-                        time_cell = cells[1]
-                        time_text = time_cell.get_text(strip=True)
+                        # Parse submission time (last column)
+                        time_text = cells[8].get_text(strip=True)
                         submitted_at = self._parse_qoj_time(time_text)
 
                         if submitted_at is None:
@@ -230,9 +230,8 @@ class QojJudge(AbstractJudge):
                             found_old_submission = True
                             continue
 
-                        # Parse problem code
-                        problem_cell = cells[2]
-                        problem_link = problem_cell.find("a")
+                        # Parse problem code (second column)
+                        problem_link = cells[1].find("a")
                         if not problem_link:
                             continue
                         problem_href = problem_link.get("href", "")
@@ -242,9 +241,8 @@ class QojJudge(AbstractJudge):
                         problem_code = match.group(1)
                         problem_title = problem_link.get_text(strip=True)
 
-                        # Parse verdict
-                        verdict_cell = cells[3]
-                        verdict_text = verdict_cell.get_text(strip=True)
+                        # Parse verdict (fourth column)
+                        verdict_text = cells[3].get_text(strip=True)
                         verdict = QOJ_VERDICT_MAP.get(verdict_text)
                         if verdict is None:
                             # Try partial match

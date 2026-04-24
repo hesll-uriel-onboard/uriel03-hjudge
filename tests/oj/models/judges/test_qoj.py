@@ -105,27 +105,34 @@ class TestQojJudge:
     @pytest.mark.asyncio
     async def test_crawl_user_submissions_mocked(self):
         """Test crawling submissions with mocked HTML response"""
-        # Sample HTML table for submissions
+        # QOJ columns: [0]id [1]problem [2]submitter [3]verdict
+        #              [4]time [5]memory [6]lang [7]size [8]timestamp
         html_content = """
         <html>
         <body>
         <table>
             <tbody>
                 <tr>
-                    <td><a href="/submission/123456">123456</a></td>
-                    <td>2024-06-02 21:00:00</td>
+                    <td><a href="/submission/123456">#123456</a></td>
                     <td><a href="/problem/1">1. A + B Problem</a></td>
+                    <td>testuser</td>
                     <td>Accepted</td>
+                    <td>1ms</td>
+                    <td>1024kb</td>
                     <td>Python</td>
-                    <td>100</td>
+                    <td>1.0kb</td>
+                    <td>2024-06-02 21:00:00</td>
                 </tr>
                 <tr>
-                    <td><a href="/submission/123457">123457</a></td>
-                    <td>2024-06-02 22:00:00</td>
+                    <td><a href="/submission/123457">#123457</a></td>
                     <td><a href="/problem/2">2. Another Problem</a></td>
+                    <td>testuser</td>
                     <td>Wrong Answer</td>
+                    <td>2ms</td>
+                    <td>2048kb</td>
                     <td>Python</td>
-                    <td>0</td>
+                    <td>1.0kb</td>
+                    <td>2024-06-02 22:00:00</td>
                 </tr>
             </tbody>
         </table>
@@ -165,20 +172,26 @@ class TestQojJudge:
         <table>
             <tbody>
                 <tr>
-                    <td><a href="/submission/123456">123456</a></td>
-                    <td>2024-06-01 10:00:00</td>
+                    <td><a href="/submission/123456">#123456</a></td>
                     <td><a href="/problem/1">1. A + B Problem</a></td>
+                    <td>testuser</td>
                     <td>Accepted</td>
+                    <td>1ms</td>
+                    <td>1024kb</td>
                     <td>Python</td>
-                    <td>100</td>
+                    <td>1.0kb</td>
+                    <td>2024-06-01 10:00:00</td>
                 </tr>
                 <tr>
-                    <td><a href="/submission/123457">123457</a></td>
-                    <td>2024-06-02 22:00:00</td>
+                    <td><a href="/submission/123457">#123457</a></td>
                     <td><a href="/problem/2">2. Another Problem</a></td>
+                    <td>testuser</td>
                     <td>Accepted</td>
+                    <td>1ms</td>
+                    <td>1024kb</td>
                     <td>Python</td>
-                    <td>100</td>
+                    <td>1.0kb</td>
+                    <td>2024-06-02 22:00:00</td>
                 </tr>
             </tbody>
         </table>
