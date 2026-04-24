@@ -79,17 +79,24 @@ class CodeforcesJudge(AbstractJudge):
         if self._browser:
             await self._browser.__aexit__(exc_type, exc_val, exc_tb)
 
+    @staticmethod
+    def _is_gym(contest_id: str) -> bool:
+        return len(contest_id) == 6
+
     @override
     def get_batch_config(self, from_exercise: str) -> dict[str, Any]:
         contest, _ = CodeforcesExercise.parse(from_exercise)
+        section = "gym" if self._is_gym(contest) else "contest"
         return {
             "contest": contest,
-            "url": f"{BASE_URL}/contest/{contest}",
+            "url": f"{BASE_URL}/{section}/{contest}",
         }
 
     @override
     def get_exercise_url(self, code: str) -> str:
         contest, problem = CodeforcesExercise.parse(code)
+        if self._is_gym(contest):
+            return f"{BASE_URL}/gym/{contest}/problem/{problem}"
         return f"{BASE_URL}/problemset/problem/{contest}/{problem}"
 
     @override
@@ -133,7 +140,8 @@ class CodeforcesJudge(AbstractJudge):
     def get_submission_url(self, submission_id: str, code: str = "", *args, **kwargs) -> str:
         if code:
             contest, _ = CodeforcesExercise.parse(code)
-            return f"{BASE_URL}/contest/{contest}/submission/{submission_id}"
+            section = "gym" if self._is_gym(contest) else "contest"
+            return f"{BASE_URL}/{section}/{contest}/submission/{submission_id}"
         return f"{BASE_URL}/submissions/{submission_id}"
 
     @override

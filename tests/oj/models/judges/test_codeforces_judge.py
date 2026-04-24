@@ -226,8 +226,50 @@ def test_get_submission_url():
     url = judge.get_submission_url("123456789", code="1234A")
 
     assert "codeforces.com" in url
-    assert "1234" in url
+    assert "contest/1234" in url
     assert "123456789" in url
+
+
+def test_get_submission_url_gym():
+    judge = CodeforcesJudge(MagicMock())
+
+    url = judge.get_submission_url("123456789", code="100001A")
+
+    assert "codeforces.com" in url
+    assert "gym/100001" in url
+    assert "123456789" in url
+
+
+def test_get_exercise_url_regular():
+    judge = CodeforcesJudge(MagicMock())
+
+    url = judge.get_exercise_url("1234A")
+
+    assert "problemset/problem/1234/A" in url
+
+
+def test_get_exercise_url_gym():
+    judge = CodeforcesJudge(MagicMock())
+
+    url = judge.get_exercise_url("100001A")
+
+    assert "gym/100001/problem/A" in url
+
+
+def test_get_batch_config_regular():
+    judge = CodeforcesJudge(MagicMock())
+
+    config = judge.get_batch_config("1234A")
+
+    assert "contest/1234" in config["url"]
+
+
+def test_get_batch_config_gym():
+    judge = CodeforcesJudge(MagicMock())
+
+    config = judge.get_batch_config("100001A")
+
+    assert "gym/100001" in config["url"]
 
 
 @pytest.mark.asyncio
